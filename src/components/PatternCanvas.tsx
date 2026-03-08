@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState } from 'react'
 import type { PatternInputs } from '@/types/lantern'
 import LanternViewer3D from './LanternViewer3D'
-import jsPDF from 'jspdf' // 👈 Import jsPDF เข้ามา
+import jsPDF from 'jspdf'
 
 const DEFAULT: PatternInputs = { a: 6.5, b: 7, hb: 6.5, hm: 8.5, ht: 6.5, n: 8 }
 
@@ -38,15 +38,17 @@ export default function PatternCanvas() {
     const Ht = hb + hm + ht
     const P = a + b
     
+    // ค่าความสูงของส่วนหัวและส่วนหาง (อิงตาม 3D)
     const h_spike = 9
     const l_tail = 22
     const l_tail_tip = l_tail * 0.15 
 
+    // คำนวณขอบเขต Y สูงสุดและต่ำสุด เพื่อหาความสูงรวม (Total Height)
     const max_y = Ht + h_spike
     const min_y = -(l_tail + l_tail_tip)
 
     const totalW = q * P + 2
-    const totalH = (max_y - min_y) + 15 
+    const totalH = (max_y - min_y) + 15 // +15 เผื่อขอบบนล่างให้ดูสวยงาม
 
     const scaleX = (W - 40) / totalW
     const scaleY = (H - 40) / totalH
@@ -56,6 +58,7 @@ export default function PatternCanvas() {
     const oy = 20 + ((H - 40) - totalH * sc) / 2
 
     const tx = (x: number) => ox + x * sc
+    // ปรับแกน Y โดยให้ max_y อยู่ด้านบนสุด (oy)
     const ty = (y: number) => oy + (max_y - y) * sc
 
     ctx.lineWidth = 1
@@ -98,12 +101,15 @@ export default function PatternCanvas() {
       ctx.strokeStyle = '#16A34A'
       ctx.setLineDash([4, 3])
       ctx.beginPath()
+      // เส้นพับแผงว่าว
       ctx.moveTo(tx(d), ty(hb))
       ctx.lineTo(tx(d + a), ty(hb))
       ctx.moveTo(tx(d), ty(hb + hm))
       ctx.lineTo(tx(d + a), ty(hb + hm))
+      // เส้นพับแยกระหว่างตัวโคม กับยอด (Crown)
       ctx.moveTo(tx(d), ty(Ht))
       ctx.lineTo(tx(d + a), ty(Ht))
+      // เส้นพับแยกระหว่างตัวโคม กับหาง (Tail)
       ctx.moveTo(tx(d), ty(0))
       ctx.lineTo(tx(d + a), ty(0))
       ctx.stroke()
@@ -121,53 +127,76 @@ export default function PatternCanvas() {
     ctx.fillText('--- เส้นพับ', W * 0.75, H - 8)
   }
 
-  // ฟังก์ชันดาวน์โหลด PNG
-  function handleDownloadPNG() {
+  // ฟังก์ชันดาวน์โหลด PNG (รองรับมือถือ/PC)
+  async function handleDownloadPNG() {
     const canvas = canvasRef.current
     if (!canvas) return
-    const imageURL = canvas.toDataURL('image/png')
-    const link = document.createElement('a')
-    link.href = imageURL
-    link.download = `lantern-pattern-n${inputs.n}.png`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) return
+      const fileName = `lantern-pattern-n${inputs.n}.png`
+      const file = new File([blob], fileName, { type: 'image/png' })
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'Lantern Pattern',
+            text: 'แบบแปลนรูปคลี่โคมล้านนา'
+          })
+        } catch (error) {
+          console.log('Share cancelled', error)
+        }
+      } else {
+        const imageURL = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = imageURL
+        link.download = fileName
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(imageURL)
+      }
+    }, 'image/png')
   }
 
-  // 👇 ฟังก์ชันดาวน์โหลด PDF (สร้างใหม่) 👇
-  function handleDownloadPDF() {
+  // ฟังก์ชันดาวน์โหลด PDF (รองรับมือถือ/PC)
+  async function handleDownloadPDF() {
     const canvas = canvasRef.current
     if (!canvas) return
     
-    // ดึงภาพจาก Canvas
     const imgData = canvas.toDataURL('image/png')
-    
-    // สร้างเอกสาร PDF ขนาด A4 แนวนอน (landscape)
-    const pdf = new jsPDF({
-      orientation: 'landscape',
-      unit: 'mm',
-      format: 'a4'
-    })
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
 
-    // คำนวณสัดส่วนให้ภาพพอดีกับกระดาษ A4 (297 x 210 mm)
     const pdfWidth = pdf.internal.pageSize.getWidth()
     const pdfHeight = (canvas.height * pdfWidth) / canvas.width
     
-    // ถ้ารูปสูงเกินกระดาษ ให้ยึดความสูงเป็นหลัก
     if (pdfHeight > pdf.internal.pageSize.getHeight()) {
       const scaledHeight = pdf.internal.pageSize.getHeight()
       const scaledWidth = (canvas.width * scaledHeight) / canvas.height
-      // จัดให้อยู่ตรงกลาง (center)
       const xOffset = (pdfWidth - scaledWidth) / 2
       pdf.addImage(imgData, 'PNG', xOffset, 0, scaledWidth, scaledHeight)
     } else {
-      // จัดให้อยู่ตรงกลางแนวตั้ง
       const yOffset = (pdf.internal.pageSize.getHeight() - pdfHeight) / 2
       pdf.addImage(imgData, 'PNG', 0, yOffset, pdfWidth, pdfHeight)
     }
 
-    // สั่งเซฟไฟล์
-    pdf.save(`lantern-pattern-n${inputs.n}.pdf`)
+    const fileName = `lantern-pattern-n${inputs.n}.pdf`
+    const pdfBlob = pdf.output('blob')
+    const file = new File([pdfBlob], fileName, { type: 'application/pdf' })
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'Lantern Pattern PDF'
+        })
+      } catch (error) {
+        console.log('Share cancelled', error)
+      }
+    } else {
+      pdf.save(fileName)
+    }
   }
 
   useEffect(() => {
@@ -246,7 +275,6 @@ export default function PatternCanvas() {
             <h3 style={{ fontSize: '1rem', margin: 0, color: 'var(--text-main, #333)' }}>
               📄 แผ่นคลี่ 2D
             </h3>
-            {/* 👇 กลุ่มปุ่มดาวน์โหลด 👇 */}
             <div style={{ display: 'flex', gap: '8px' }}>
               <button 
                 onClick={handleDownloadPNG}
