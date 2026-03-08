@@ -1,26 +1,208 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;600;700&family=Charm:wght@400;700&display=swap');
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --gold: #C8943E;
+  --gold-light: #E8C36A;
+  --gold-dark: #8B6914;
+  --maroon: #6B1D2A;
+  --maroon-light: #8B2E3C;
+  --cream: #FFF8EC;
+  --cream-dark: #F0E4CC;
+  --dark: #2C1810;
+  --text: #3D2B1F;
+  --white: #FFFFFF;
+  --shadow: 0 4px 24px rgba(44,24,16,0.12);
+  --radius: 12px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Noto Sans Thai', sans-serif;
+  background: var(--cream);
+  color: var(--text);
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* ── Sections ── */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+section {
+  margin: 40px 0;
+  padding: 32px;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border-left: 4px solid var(--gold);
+}
+
+section h2 {
+  font-family: 'Charm', cursive;
+  color: var(--maroon);
+  font-size: clamp(22px, 3.5vw, 30px);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--cream-dark);
+}
+
+section h2 .icon { margin-right: 8px; }
+
+section h3 {
+  color: var(--gold-dark);
+  font-size: 18px;
+  margin: 20px 0 10px;
+}
+
+section p {
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+
+/* ── Formula Box ── */
+.formula-box {
+  background: linear-gradient(135deg, var(--cream) 0%, var(--cream-dark) 100%);
+  border: 1.5px solid var(--gold);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 16px 0;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--maroon);
+  letter-spacing: 0.5px;
+}
+
+/* ── Calculator ── */
+.calc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.calc-field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold-dark);
+  margin-bottom: 4px;
+}
+
+.calc-field input,
+.calc-field select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--cream-dark);
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: inherit;
+  transition: border-color 0.3s;
+  background: var(--cream);
+}
+
+.calc-field input:focus,
+.calc-field select:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(200, 148, 62, 0.15);
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-block;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, var(--maroon), var(--maroon-light));
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 12px;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(107, 29, 42, 0.3);
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+}
+
+/* ── Result Box ── */
+.result-box {
+  background: var(--cream);
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 16px;
+  border: 1.5px solid var(--gold);
+  min-height: 60px;
+}
+
+.result-box .big-number {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--maroon);
+}
+
+.result-box .unit {
+  font-size: 14px;
+  color: var(--gold-dark);
+}
+
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--cream-dark);
+  font-size: 14px;
+}
+
+.result-row:last-child { border-bottom: none; }
+
+/* ── Table ── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 14px;
+}
+
+.data-table th {
+  background: var(--maroon);
+  color: var(--white);
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.data-table td {
+  padding: 8px 12px;
+  text-align: center;
+  border-bottom: 1px solid var(--cream-dark);
+}
+
+.data-table tr:nth-child(even) { background: var(--cream); }
+.data-table tr:hover { background: var(--cream-dark); }
+
+/* ── Desmos Embed ── */
+.desmos-frame {
+  width: 100%;
+  height: 450px;
+  border: 2px solid var(--gold);
+  border-radius: var(--radius);
+  margin: 16px 0;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  section { padding: 20px 16px; margin: 24px 0; }
+  .calc-grid { grid-template-columns: 1fr; }
 }

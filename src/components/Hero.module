@@ -1,0 +1,66 @@
+.hero {
+  background: linear-gradient(135deg, var(--maroon) 0%, var(--maroon-light) 40%, var(--gold-dark) 100%);
+  color: var(--cream);
+  text-align: center;
+  padding: 60px 20px 50px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    transparent 0deg 8deg,
+    rgba(255, 255, 255, 0.02) 8deg 10deg
+  );
+  animation: slowSpin 120s linear infinite;
+}
+
+@keyframes slowSpin {
+  to { transform: rotate(360deg); }
+}
+
+.title {
+  font-family: 'Charm', cursive;
+  font-size: clamp(28px, 5vw, 48px);
+  font-weight: 700;
+  position: relative;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  margin-bottom: 8px;
+}
+
+.lanternIcon {
+  font-size: 64px;
+  display: block;
+  margin-bottom: 16px;
+  position: relative;
+  animation: sway 3s ease-in-out infinite;
+}
+
+@keyframes sway {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+.subtitle {
+  font-size: clamp(14px, 2.5vw, 18px);
+  opacity: 0.9;
+  position: relative;
+  max-width: 700px;
+  margin: 0 auto;
+  font-weight: 300;
+}
+
+.engTitle {
+  font-size: clamp(11px, 1.8vw, 14px);
+  opacity: 0.7;
+  margin-top: 12px;
+  position: relative;
+  font-style: italic;
+}

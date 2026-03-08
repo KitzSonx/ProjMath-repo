@@ -1,0 +1,12 @@
+.footer {
+  text-align: center;
+  padding: 30px 20px;
+  background: var(--dark);
+  color: var(--cream-dark);
+  font-size: 13px;
+  margin-top: 40px;
+}
+
+.heart {
+  color: var(--gold);
+}

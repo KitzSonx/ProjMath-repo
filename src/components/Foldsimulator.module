@@ -1,0 +1,72 @@
+.sliderGroup {
+  margin: 16px 0;
+}
+
+.sliderLabel {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gold-dark);
+}
+
+.slider {
+  width: 100%;
+  margin: 8px 0;
+  accent-color: var(--maroon);
+  height: 6px;
+}
+
+.gaugeContainer {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.gauge {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+.gaugeInner {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: var(--white);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.gaugePct {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--maroon);
+}
+
+.gaugeLbl {
+  font-size: 11px;
+  color: var(--gold-dark);
+}
+
+.gaugeInfo {
+  text-align: left;
+}
+
+.gaugeInfo p {
+  font-size: 14px;
+  margin: 4px 0;
+}
+
+@media (max-width: 600px) {
+  .gaugeContainer { flex-direction: column; }
+}
