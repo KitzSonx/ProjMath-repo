@@ -1,6 +1,22 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import styles from './FoldSimulator.module.css'
+import type { PatternInputs } from '@/types/lantern' // 👈 Import type เข้ามา
+
+const LanternViewer3D = dynamic(() => import('./LanternViewer3D'), {
+  ssr: false,
+  loading: () => (
+    <div style={{
+      width: '100%', height: 380, borderRadius: 12,
+      background: '#1a0a05', display: 'flex',
+      alignItems: 'center', justifyContent: 'center',
+      color: '#c8943e', fontSize: 14, marginTop: 16,
+    }}>
+      🏮 กำลังโหลด 3D...
+    </div>
+  ),
+})
 
 interface Props {
   vOpen: number
@@ -9,6 +25,7 @@ interface Props {
   sinT: number
   vTheta: number
   vrr: number
+  patternInputs: PatternInputs // 👈 เพิ่มการรับค่าขนาดโคมจากหน้าหลัก
 }
 
 const TABLE_ROWS = [
@@ -19,13 +36,13 @@ const TABLE_ROWS = [
   { theta: 30, sin: '0.500', v: '548.25',   vrr: '87.5%' },
 ]
 
-export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, vTheta, vrr }: Props) {
-  const gaugeDeg = vrr * 3.6  // 0–100% → 0–360deg
+export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, vTheta, vrr, patternInputs }: Props) {
+  const gaugeDeg = vrr * 3.6
 
   return (
     <section id="calc-fold">
       <h2><span className="icon">🔄</span>จำลองการพับ–กาง</h2>
-      <p>เลื่อนแถบเพื่อเปลี่ยนมุมกาง θ แล้วดูปริมาตรและอัตราการลดที่เปลี่ยนไป</p>
+      <p>เลื่อนแถบเพื่อเปลี่ยนมุมกาง θ แล้วดูโคม 3D และปริมาตรที่เปลี่ยนไปแบบ real-time</p>
 
       <div className={styles.sliderGroup}>
         <label className={styles.sliderLabel}>
@@ -41,7 +58,18 @@ export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, vThet
         />
       </div>
 
-      <div className={styles.gaugeContainer}>
+      {/* 👈 จ่ายค่า Props ทั้งหมดที่ได้จากแผงควบคุมเข้าไปให้ LanternViewer3D */}
+      <LanternViewer3D 
+        theta={theta} 
+        n={patternInputs.n} 
+        a={patternInputs.a}
+        b={patternInputs.b}
+        hb={patternInputs.hb}
+        hm={patternInputs.hm}
+        ht={patternInputs.ht}
+      />
+
+      <div className={styles.gaugeContainer} style={{ marginTop: 20 }}>
         <div
           className={styles.gauge}
           style={{ background: `conic-gradient(var(--maroon) ${gaugeDeg}deg, var(--cream-dark) ${gaugeDeg}deg)` }}

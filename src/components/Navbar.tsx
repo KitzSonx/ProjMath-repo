@@ -4,8 +4,8 @@ const navLinks = [
   { href: '#about', label: 'เกี่ยวกับ' },
   { href: '#formulas', label: 'สูตร' },
   { href: '#calc-volume', label: 'คำนวณปริมาตร' },
-  { href: '#calc-fold', label: 'พับ–กาง' },
   { href: '#pattern', label: 'รูปคลี่' },
+  { href: '#calc-fold', label: 'พับ–กาง' },
   { href: '#calc-area', label: 'พื้นที่กระดาษ' },
   { href: '#desmos', label: 'Desmos' },
 ]
