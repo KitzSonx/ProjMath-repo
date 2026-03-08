@@ -1,12 +1,19 @@
 .footer {
   text-align: center;
   padding: 30px 20px;
-  background: var(--dark);
-  color: var(--cream-dark);
+  background: linear-gradient(135deg, #080F1E 0%, #0F2D5C 100%);
+  color: #8aa4cc;
   font-size: 13px;
   margin-top: 40px;
+  border-top: 3px solid var(--gold);
 }
 
 .heart {
   color: var(--gold);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.3); }
 }

@@ -1,17 +1,25 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;600;700&family=Charm:wght@400;700&display=swap');
 
 :root {
-  --gold: #C8943E;
-  --gold-light: #E8C36A;
-  --gold-dark: #8B6914;
-  --maroon: #6B1D2A;
-  --maroon-light: #8B2E3C;
-  --cream: #FFF8EC;
-  --cream-dark: #F0E4CC;
-  --dark: #2C1810;
-  --text: #3D2B1F;
+  /* ── Accent: Crimson Red ── */
+  --gold: #E8304A;
+  --gold-light: #FF6B7A;
+  --gold-dark: #B01E35;
+
+  /* ── Primary: Deep Navy ── */
+  --maroon: #0F2D5C;
+  --maroon-light: #1A4580;
+
+  /* ── Background: Cool off-white with blue tint ── */
+  --cream: #F0F4FF;
+  --cream-dark: #D8E2F8;
+
+  /* ── Dark: deep navy-black ── */
+  --dark: #080F1E;
+  --text: #1A2744;
   --white: #FFFFFF;
-  --shadow: 0 4px 24px rgba(44,24,16,0.12);
+
+  --shadow: 0 4px 24px rgba(15, 45, 92, 0.13);
   --radius: 12px;
 }
 
@@ -65,7 +73,7 @@ section p {
 
 /* ── Formula Box ── */
 .formula-box {
-  background: linear-gradient(135deg, var(--cream) 0%, var(--cream-dark) 100%);
+  background: linear-gradient(135deg, #EEF2FF 0%, var(--cream-dark) 100%);
   border: 1.5px solid var(--gold);
   border-radius: 8px;
   padding: 16px 20px;
@@ -103,13 +111,14 @@ section p {
   font-family: inherit;
   transition: border-color 0.3s;
   background: var(--cream);
+  color: var(--text);
 }
 
 .calc-field input:focus,
 .calc-field select:focus {
   outline: none;
   border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(200, 148, 62, 0.15);
+  box-shadow: 0 0 0 3px rgba(232, 48, 74, 0.15);
 }
 
 /* ── Buttons ── */
@@ -130,11 +139,15 @@ section p {
 
 .btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(107, 29, 42, 0.3);
+  box-shadow: 0 6px 20px rgba(15, 45, 92, 0.35);
 }
 
 .btn-gold {
   background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+}
+
+.btn-gold:hover {
+  box-shadow: 0 6px 20px rgba(232, 48, 74, 0.4);
 }
 
 /* ── Result Box ── */

@@ -13,16 +13,21 @@
 .slider {
   width: 100%;
   margin: 8px 0;
-  accent-color: var(--maroon);
+  accent-color: var(--gold);
   height: 6px;
 }
 
 .gaugeContainer {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 24px;
   flex-wrap: wrap;
   justify-content: center;
+  margin-top: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f0f4ff, #e8eeff);
+  border-radius: 12px;
+  border: 1px solid var(--cream-dark);
 }
 
 .gauge {
@@ -33,29 +38,33 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.3s;
+  transition: background 0.4s ease;
+  box-shadow: 0 4px 20px rgba(15,45,92,0.15);
 }
 
 .gaugeInner {
-  width: 120px;
-  height: 120px;
+  width: 118px;
+  height: 118px;
   border-radius: 50%;
   background: var(--white);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  box-shadow: inset 0 2px 8px rgba(15,45,92,0.08);
 }
 
 .gaugePct {
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 700;
   color: var(--maroon);
+  line-height: 1;
 }
 
 .gaugeLbl {
   font-size: 11px;
   color: var(--gold-dark);
+  margin-top: 3px;
 }
 
 .gaugeInfo {
@@ -64,7 +73,8 @@
 
 .gaugeInfo p {
   font-size: 14px;
-  margin: 4px 0;
+  margin: 6px 0;
+  color: var(--text);
 }
 
 @media (max-width: 600px) {

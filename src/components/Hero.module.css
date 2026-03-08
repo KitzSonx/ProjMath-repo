@@ -1,29 +1,47 @@
 .hero {
-  background: linear-gradient(135deg, var(--maroon) 0%, var(--maroon-light) 40%, var(--gold-dark) 100%);
-  color: var(--cream);
+  background: linear-gradient(135deg, #080F1E 0%, #0F2D5C 45%, #1A1040 75%, #8B0020 100%);
+  color: #F0F4FF;
   text-align: center;
   padding: 60px 20px 50px;
   position: relative;
   overflow: hidden;
 }
 
+/* ลายตารางจุดพิมพ์ */
 .hero::before {
   content: '';
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: repeating-conic-gradient(
-    from 0deg,
-    transparent 0deg 8deg,
-    rgba(255, 255, 255, 0.02) 8deg 10deg
-  );
-  animation: slowSpin 120s linear infinite;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(232,48,74,0.18) 1px, transparent 1px),
+    radial-gradient(circle, rgba(30,80,180,0.12) 1px, transparent 1px);
+  background-size: 32px 32px, 64px 64px;
+  background-position: 0 0, 16px 16px;
+  animation: driftGrid 30s linear infinite;
 }
 
-@keyframes slowSpin {
-  to { transform: rotate(360deg); }
+/* แสงไล่โทนเคลื่อนไหว */
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 60% at 70% 40%, rgba(232,48,74,0.15) 0%, transparent 70%),
+              radial-gradient(ellipse 50% 50% at 30% 60%, rgba(26,69,128,0.25) 0%, transparent 70%);
+  animation: breathe 6s ease-in-out infinite alternate;
+}
+
+@keyframes driftGrid {
+  to { background-position: 32px 32px, 48px 48px; }
+}
+
+@keyframes breathe {
+  from { opacity: 0.6; }
+  to   { opacity: 1; }
+}
+
+@keyframes sway {
+  0%, 100% { transform: rotate(-4deg) scale(1); }
+  50%       { transform: rotate(4deg)  scale(1.05); }
 }
 
 .title {
@@ -31,7 +49,12 @@
   font-size: clamp(28px, 5vw, 48px);
   font-weight: 700;
   position: relative;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 1;
+  color: #ffffff;
+  text-shadow:
+    0 2px 16px rgba(232, 48, 74, 0.6),
+    0 0 40px rgba(30, 80, 180, 0.5),
+    0 0 80px rgba(232, 48, 74, 0.2);
   margin-bottom: 8px;
 }
 
@@ -40,27 +63,28 @@
   display: block;
   margin-bottom: 16px;
   position: relative;
+  z-index: 1;
   animation: sway 3s ease-in-out infinite;
-}
-
-@keyframes sway {
-  0%, 100% { transform: rotate(-3deg); }
-  50% { transform: rotate(3deg); }
+  filter: drop-shadow(0 0 16px rgba(232,48,74,0.7));
 }
 
 .subtitle {
-  font-size: clamp(14px, 2.5vw, 18px);
-  opacity: 0.9;
+  font-size: clamp(14px, 2.5vw, 17px);
+  opacity: 0.88;
   position: relative;
+  z-index: 1;
   max-width: 700px;
   margin: 0 auto;
   font-weight: 300;
+  color: #c8d8ff;
 }
 
 .engTitle {
-  font-size: clamp(11px, 1.8vw, 14px);
-  opacity: 0.7;
+  font-size: clamp(11px, 1.8vw, 13px);
+  opacity: 0.55;
   margin-top: 12px;
   position: relative;
+  z-index: 1;
   font-style: italic;
+  color: #a0b8e8;
 }
