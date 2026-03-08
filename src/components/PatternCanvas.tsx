@@ -43,12 +43,11 @@ export default function PatternCanvas() {
     const l_tail = 22
     const l_tail_tip = l_tail * 0.15 
 
-    // คำนวณขอบเขต Y สูงสุดและต่ำสุด เพื่อหาความสูงรวม (Total Height)
     const max_y = Ht + h_spike
     const min_y = -(l_tail + l_tail_tip)
 
     const totalW = q * P + 2
-    const totalH = (max_y - min_y) + 15 // +15 เผื่อขอบบนล่างให้ดูสวยงาม
+    const totalH = (max_y - min_y) + 15 
 
     const scaleX = (W - 40) / totalW
     const scaleY = (H - 40) / totalH
@@ -58,7 +57,6 @@ export default function PatternCanvas() {
     const oy = 20 + ((H - 40) - totalH * sc) / 2
 
     const tx = (x: number) => ox + x * sc
-    // ปรับแกน Y โดยให้ max_y อยู่ด้านบนสุด (oy)
     const ty = (y: number) => oy + (max_y - y) * sc
 
     ctx.lineWidth = 1
@@ -101,15 +99,12 @@ export default function PatternCanvas() {
       ctx.strokeStyle = '#16A34A'
       ctx.setLineDash([4, 3])
       ctx.beginPath()
-      // เส้นพับแผงว่าว
       ctx.moveTo(tx(d), ty(hb))
       ctx.lineTo(tx(d + a), ty(hb))
       ctx.moveTo(tx(d), ty(hb + hm))
       ctx.lineTo(tx(d + a), ty(hb + hm))
-      // เส้นพับแยกระหว่างตัวโคม กับยอด (Crown)
       ctx.moveTo(tx(d), ty(Ht))
       ctx.lineTo(tx(d + a), ty(Ht))
-      // เส้นพับแยกระหว่างตัวโคม กับหาง (Tail)
       ctx.moveTo(tx(d), ty(0))
       ctx.lineTo(tx(d + a), ty(0))
       ctx.stroke()
@@ -127,7 +122,18 @@ export default function PatternCanvas() {
     ctx.fillText('--- เส้นพับ', W * 0.75, H - 8)
   }
 
-  // ฟังก์ชันดาวน์โหลด PNG (รองรับมือถือ/PC)
+  // ฟังก์ชันเช็กว่าเป็นมือถือ/แท็บเล็ตหรือไม่
+  function isMobileDevice() {
+    if (typeof window === 'undefined') return false;
+    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+    // ตรวจจับ iOS, Android และอุปกรณ์พกพาอื่นๆ
+    const isMobileString = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    // ตรวจจับ iPad รุ่นใหม่ที่หลอกตัวตนว่าเป็น Mac
+    const isMacMobile = navigator.maxTouchPoints > 1 && /macintosh/i.test(userAgent);
+    return isMobileString || isMacMobile;
+  }
+
+  // ฟังก์ชันดาวน์โหลด PNG
   async function handleDownloadPNG() {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -136,8 +142,10 @@ export default function PatternCanvas() {
       if (!blob) return
       const fileName = `lantern-pattern-n${inputs.n}.png`
       const file = new File([blob], fileName, { type: 'image/png' })
+      const isMobile = isMobileDevice()
 
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      // ถ้าเป็นมือถือ/แท็บเล็ต และรองรับ Share ให้ใช้ Share
+      if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
             files: [file],
@@ -148,6 +156,7 @@ export default function PatternCanvas() {
           console.log('Share cancelled', error)
         }
       } else {
+        // ถ้าเป็นคอมพิวเตอร์ (PC/Mac) ให้โหลดตรงๆ ทันที
         const imageURL = URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = imageURL
@@ -160,7 +169,7 @@ export default function PatternCanvas() {
     }, 'image/png')
   }
 
-  // ฟังก์ชันดาวน์โหลด PDF (รองรับมือถือ/PC)
+  // ฟังก์ชันดาวน์โหลด PDF
   async function handleDownloadPDF() {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -182,21 +191,27 @@ export default function PatternCanvas() {
     }
 
     const fileName = `lantern-pattern-n${inputs.n}.pdf`
-    const pdfBlob = pdf.output('blob')
-    const file = new File([pdfBlob], fileName, { type: 'application/pdf' })
+    const isMobile = isMobileDevice()
 
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: 'Lantern Pattern PDF'
-        })
-      } catch (error) {
-        console.log('Share cancelled', error)
+    if (isMobile && navigator.canShare) {
+      const pdfBlob = pdf.output('blob')
+      const file = new File([pdfBlob], fileName, { type: 'application/pdf' })
+      
+      if (navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'Lantern Pattern PDF'
+          })
+          return; // ออกจากฟังก์ชันถ้าแชร์สำเร็จ
+        } catch (error) {
+          console.log('Share cancelled', error)
+        }
       }
-    } else {
-      pdf.save(fileName)
     }
+    
+    // ถ้าไม่ใช่ชุดมือถือ หรือ Share ไม่สำเร็จ/ไม่รองรับ ให้เซฟไฟล์ตรงๆ ทันที
+    pdf.save(fileName)
   }
 
   useEffect(() => {
