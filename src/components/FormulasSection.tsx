@@ -4,7 +4,6 @@ const formulas = [
   { title: 'ปริมาตรทรงตัดยอด (1 ชั้น)', formula: 'V = (h/3) × (A₁ + A₂ + √(A₁ × A₂))' },
   { title: 'ปริมาตรตามมุมกาง θ', formula: 'V(θ) = V_open × sin³θ' },
   { title: 'อัตราการลดปริมาตร', formula: 'VRR(θ) = 1 − sin³θ' },
-  { title: 'สูตร Euler', formula: 'V − E + F = 2 → 34 − 72 + 40 = 2 ✓' },
 ]
 
 export default function FormulasSection() {

@@ -14,7 +14,7 @@ import PatternCanvas   from '@/components/PatternCanvas'
 import AreaCalculator  from '@/components/AreaCalculator'
 import DesmosSection   from '@/components/DesmosSection'
 import Footer          from '@/components/Footer'
-import PatternControls from '@/components/PatternControls' // 👈 Import เข้ามาใหม่
+import PatternControls from '@/components/PatternControls'
 
 const DEFAULT_PATTERN: PatternInputs = { a: 6.5, b: 7, hb: 6.5, hm: 8.5, ht: 6.5, n: 8 }
 

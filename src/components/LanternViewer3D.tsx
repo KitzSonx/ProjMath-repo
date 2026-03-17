@@ -11,6 +11,7 @@ interface Props {
   hb?: number
   hm?: number
   ht?: number
+  ltail?: number // 💥 เพิ่ม Props รับความยาวหาง
 }
 
 // Helpers functions
@@ -46,7 +47,7 @@ function addLine(group: THREE.Group, pts: THREE.Vector3[], mat: THREE.Material) 
 }
 
 export default function LanternViewer3D({
-  theta, n = 8, a = 6.5, b = 7, hb = 6.5, hm = 8.5, ht = 6.5,
+  theta, n = 8, a = 6.5, b = 7, hb = 6.5, hm = 8.5, ht = 6.5, ltail = 30 // 💥 รับ ltail มาใช้
 }: Props) {
   const mountRef = useRef<HTMLDivElement>(null)
   const engineRef = useRef<{
@@ -74,9 +75,8 @@ export default function LanternViewer3D({
     scene.background = new THREE.Color(0x120608)
     scene.fog = new THREE.FogExp2(0x120608, 0.015)
 
-    // ตั้งค่ากล้องเริ่มต้น
     const camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 300)
-    camera.position.set(0, 4, 45) // ขยับกล้องออกเพื่อให้เห็นทั้งหัวและหางตอนซูมออก
+    camera.position.set(0, 4, 45) 
     camera.lookAt(0, 0, 0)
 
     scene.add(new THREE.AmbientLight(0xffe0b0, 0.3))
@@ -102,48 +102,43 @@ export default function LanternViewer3D({
 
     engineRef.current = { scene, lanternGroup, candleLight, materials }
 
-    // --- ระบบควบคุมมุมกล้องและการซูม ---
     let isDragging = false, prevX = 0, prevY = 0, rotY = 0, rotX = 0.15, animId: number
     let initialPinchDistance = -1
 
     const onDown = (e: MouseEvent | TouchEvent) => {
       if ('touches' in e && e.touches.length === 2) {
-        // กรณีใช้ 2 นิ้วแตะ (เตรียมซูม)
         isDragging = false
         const dx = e.touches[0].clientX - e.touches[1].clientX
         const dy = e.touches[0].clientY - e.touches[1].clientY
         initialPinchDistance = Math.hypot(dx, dy)
         return
       }
-      // กรณีใช้ 1 นิ้ว หรือคลิกเมาส์ (เตรียมหมุน)
       isDragging = true
       const pt = 'touches' in e ? e.touches[0] : (e as MouseEvent)
       prevX = pt.clientX; prevY = pt.clientY
     }
 
     const onMove = (e: MouseEvent | TouchEvent) => {
-      // จัดการการจีบนิ้วซูม (Pinch-to-zoom) สำหรับมือถือ
       if ('touches' in e && e.touches.length === 2) {
-        e.preventDefault() // ป้องกันจอเลื่อน
+        e.preventDefault() 
         const dx = e.touches[0].clientX - e.touches[1].clientX
         const dy = e.touches[0].clientY - e.touches[1].clientY
         const distance = Math.hypot(dx, dy)
         
         if (initialPinchDistance > 0) {
           const delta = initialPinchDistance - distance
-          camera.position.z += delta * 0.15 // ความเร็วในการซูมมือถือ
-          camera.position.z = Math.max(15, Math.min(100, camera.position.z)) // จำกัดระยะซูม
+          camera.position.z += delta * 0.15 
+          camera.position.z = Math.max(15, Math.min(100, camera.position.z)) 
         }
         initialPinchDistance = distance
         return
       }
 
-      // จัดการการหมุน
       if (!isDragging) return
       const pt = 'touches' in e ? e.touches[0] : (e as MouseEvent)
       rotY += (pt.clientX - prevX) * 0.008
       rotX += (pt.clientY - prevY) * 0.005
-      rotX = Math.max(-0.4, Math.min(0.6, rotX)) // จำกัดมุมก้มเงย
+      rotX = Math.max(-0.4, Math.min(0.6, rotX)) 
       prevX = pt.clientX; prevY = pt.clientY
     }
 
@@ -152,11 +147,10 @@ export default function LanternViewer3D({
       initialPinchDistance = -1
     }
 
-    // จัดการการซูมด้วยลูกกลิ้งเมาส์
     const onWheel = (e: WheelEvent) => {
-      e.preventDefault() // ป้องกันหน้าเว็บเลื่อนขึ้นลง
-      camera.position.z += e.deltaY * 0.05 // ความเร็วในการซูมเมาส์
-      camera.position.z = Math.max(15, Math.min(100, camera.position.z)) // ล็อกระยะใกล้-ไกลสุด
+      e.preventDefault() 
+      camera.position.z += e.deltaY * 0.05 
+      camera.position.z = Math.max(15, Math.min(100, camera.position.z)) 
     }
 
     const dom = renderer.domElement
@@ -170,7 +164,6 @@ export default function LanternViewer3D({
 
     function animate() {
       animId = requestAnimationFrame(animate)
-      // ถ้าไม่ได้จับหมุน ให้โมเดลหมุนรอบตัวเองเบาๆ
       if (!isDragging && initialPinchDistance === -1) rotY += 0.004
       
       lanternGroup.rotation.y = rotY
@@ -216,7 +209,7 @@ export default function LanternViewer3D({
     materials.paper.emissiveIntensity = 0.15 + 0.4 * sinT
 
     const Ht_total = hb + hm + ht
-    const sc = 14 / (Ht_total || 1) // สเกล 3D
+    const sc = 14 / (Ht_total || 1) 
 
     const A = a * sc, B = b * sc
     const Hb = hb * sc, Hm = hm * sc, Ht2 = ht * sc
@@ -245,7 +238,6 @@ export default function LanternViewer3D({
       const ang_L_mid = ang_base - delta_blue / 2
       const ang_R_mid = ang_base + delta_blue / 2
 
-      // ---- 1. วาดแผงสีน้ำเงิน ----
       const b_bot_L = new THREE.Vector3(R_end * Math.cos(ang_L_end), y_bot, R_end * Math.sin(ang_L_end))
       const b_bot_R = new THREE.Vector3(R_end * Math.cos(ang_R_end), y_bot, R_end * Math.sin(ang_R_end))
 
@@ -262,7 +254,6 @@ export default function LanternViewer3D({
       addQuad(lanternGroup, [b_m1_L, b_m1_R, b_m2_R, b_m2_L], materials.paper) 
       addQuad(lanternGroup, [b_m2_L, b_m2_R, b_top_R, b_top_L], materials.paper) 
 
-      // ---- 2. วาดแผงสีแดง (ประกอบตรงๆ) ----
       const ang_base_next = (j + 1) * slice_angle
       const ang_L_mid_next = ang_base_next - delta_blue / 2
 
@@ -273,10 +264,8 @@ export default function LanternViewer3D({
       addQuad(lanternGroup, [b_m1_R, b_next_m1_L, b_next_m2_L, b_m2_R], materials.paper)
       addTri(lanternGroup, b_m2_R, b_next_m2_L, b_top_R, materials.paper)
 
-      // 🌟 ---- 3. เพิ่มยอดสามเหลี่ยม (Crown Spikes) ที่ใหญ่และเรียวขึ้น ----
-      const h_spike_ref = 9; // เพิ่มความสูงจากเดิม 3 เป็น 11 ให้ดูเด่นและเรียวขึ้นมาก
+      const h_spike_ref = 9; 
       const H_spike = h_spike_ref * sc; 
-      // รวบปลายยอดเข้าหากึ่งกลาง (0.6 คือเอนเข้า 40%) เพื่อให้ทรงดูเพรียวขึ้น
       const R_spike_tip = R_end * 0.6; 
       
       const spikeTip = new THREE.Vector3(
@@ -288,8 +277,8 @@ export default function LanternViewer3D({
       addTri(lanternGroup, b_top_L, spikeTip, b_top_R, materials.paper);
       addLine(lanternGroup, [b_top_L, spikeTip, b_top_R], materials.edge);
 
-      // 🌟 ---- 4. วาดหาง (Hanging Tails) ----
-      const l_tail_ref = 22; 
+      // 💥 วาดหาง โดยรับค่าความยาวจาก Slider (ltail)
+      const l_tail_ref = ltail; 
       const L_tail = l_tail_ref * sc; 
       const tip_prop = 0.15; 
       
@@ -305,7 +294,6 @@ export default function LanternViewer3D({
       addTri(lanternGroup, t_botL_vert, decorativeTip, t_botR_vert, materials.paper);
       addLine(lanternGroup, [b_bot_L, t_botL_vert, decorativeTip, t_botR_vert, b_bot_R], materials.edge);
 
-      // ---- 5. วาดเส้นขอบ (Lines) ตัวโคมหลัก ----
       addLine(lanternGroup, [b_bot_L, b_m1_L, b_m2_L, b_top_L], materials.edge)
       addLine(lanternGroup, [b_bot_R, b_m1_R, b_m2_R, b_top_R], materials.edge)
       addLine(lanternGroup, [b_bot_L, b_bot_R], materials.edge)
@@ -330,7 +318,8 @@ export default function LanternViewer3D({
     candleLight.userData.baseIntensity = 2.5 * sinT * sinT
     candleLight.distance = 20 * sinT + 5
 
-  }, [theta, n, a, b, hb, hm, ht])
+  // 💥 เพิ่ม ltail เข้าไปใน dependency เพื่อให้ 3D re-render ตอนปรับหาง
+  }, [theta, n, a, b, hb, hm, ht, ltail])
 
   return (
     <div style={{ position: 'relative', marginTop: 16 }}>

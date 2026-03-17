@@ -1,18 +1,28 @@
 'use client'
 
 import { useRef, useEffect, useState } from 'react'
-import type { PatternInputs } from '@/types/lantern'
 import LanternViewer3D from './LanternViewer3D'
 import jsPDF from 'jspdf'
 
-const DEFAULT: PatternInputs = { a: 6.5, b: 7, hb: 6.5, hm: 8.5, ht: 6.5, n: 8 }
+interface InputsState {
+  a: number
+  b: number
+  hb: number
+  hm: number
+  ht: number
+  n: number
+  ltail: number
+}
+
+const DEFAULT: InputsState = { a: 6.5, b: 7, hb: 6.5, hm: 8.5, ht: 6.5, n: 8, ltail: 30 }
 
 export default function PatternCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [inputs, setInputs] = useState<PatternInputs>(DEFAULT)
+  const [inputs, setInputs] = useState<InputsState>(DEFAULT)
   const [theta, setTheta] = useState<number>(90)
+  const [paperSize, setPaperSize] = useState<string>('a4')
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setInputs((prev) => ({ ...prev, [e.target.name]: parseFloat(e.target.value) }))
   }
 
@@ -29,24 +39,27 @@ export default function PatternCanvas() {
     const W = canvas.offsetWidth
     const H = canvas.offsetHeight
 
-    // พื้นหลังสีขาวสำหรับ ปริ้น/ดาวน์โหลด
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, W, H)
 
-    const { a, b, hb, hm, ht, n } = inputs
+    const sinT = Math.sin((theta * Math.PI) / 180)
+    
+    const a = inputs.a * sinT
+    const b = inputs.b * sinT
+    
+    const { hb, hm, ht, n, ltail } = inputs
     const q = n / 2
     const Ht = hb + hm + ht
     const P = a + b
     
-    // ค่าความสูงของส่วนหัวและส่วนหาง (อิงตาม 3D)
     const h_spike = 9
-    const l_tail = 22
+    const l_tail = ltail
     const l_tail_tip = l_tail * 0.15 
 
     const max_y = Ht + h_spike
     const min_y = -(l_tail + l_tail_tip)
 
-    const totalW = q * P + 2
+    const totalW = q * P + 6 
     const totalH = (max_y - min_y) + 15 
 
     const scaleX = (W - 40) / totalW
@@ -61,10 +74,69 @@ export default function PatternCanvas() {
 
     ctx.lineWidth = 1
 
+    function drawGlueTab(x1: number, y1: number, x2: number, y2: number) {
+      if (!ctx) return
+
+      const dx = x2 - x1
+      const dy = y2 - y1
+      const len = Math.hypot(dx, dy)
+      
+      const tabRatio = 0.7 
+      const startOffset = (1 - tabRatio) / 2
+      const endOffset = 1 - startOffset
+      
+      const newX1 = x1 + dx * startOffset
+      const newY1 = y1 + dy * startOffset
+      const newX2 = x1 + dx * endOffset
+      const newY2 = y1 + dy * endOffset
+      
+      const newDx = newX2 - newX1
+      const newDy = newY2 - newY1
+
+      const nx = -dy / len 
+      const ny = dx / len
+      
+      const tabW = 1.5 
+      const shrink = tabW * 1 
+
+      const px1 = newX1 + nx * tabW + (newDx / len) * shrink
+      const py1 = newY1 + ny * tabW + (newDy / len) * shrink
+      const px2 = newX2 + nx * tabW - (newDx / len) * shrink
+      const py2 = newY2 + ny * tabW - (newDy / len) * shrink
+
+      ctx.fillStyle = 'rgba(234, 179, 8, 0.25)' 
+      ctx.strokeStyle = '#CA8A04'
+      ctx.beginPath()
+      ctx.moveTo(tx(newX1), ty(newY1))
+      ctx.lineTo(tx(px1), ty(py1))
+      ctx.lineTo(tx(px2), ty(py2))
+      ctx.lineTo(tx(newX2), ty(newY2))
+      ctx.closePath()
+      ctx.fill()
+      ctx.stroke()
+
+      ctx.strokeStyle = '#16A34A'
+      ctx.setLineDash([4, 3])
+      ctx.beginPath()
+      ctx.moveTo(tx(newX1), ty(newY1))
+      ctx.lineTo(tx(newX2), ty(newY2))
+      ctx.stroke()
+      ctx.setLineDash([])
+    }
+
     for (let j = 0; j < q; j++) {
       const d = j * P
+      const cx = d + a + b / 2
 
-      // 1. Rectangle panel (Blue) + Crown Spikes + Hanging Tails
+      drawGlueTab(d + a, hb + hm, cx, Ht)
+      drawGlueTab(cx, Ht, d + a + b, hb + hm)
+      drawGlueTab(cx, 0, d + a, hb)
+      drawGlueTab(d + a + b, hb, cx, 0)
+
+      if (j === q - 1) {
+        drawGlueTab(d + a + b, hb + hm, d + a + b, hb)
+      }
+
       ctx.strokeStyle = '#2563EB'
       ctx.fillStyle = 'rgba(37,99,235,0.06)'
       ctx.beginPath()
@@ -80,10 +152,8 @@ export default function PatternCanvas() {
       ctx.fill()
       ctx.stroke()
 
-      // 2. Kite panel (Red)
       ctx.strokeStyle = '#DC2626'
       ctx.fillStyle = 'rgba(220,38,38,0.06)'
-      const cx = d + a + b / 2
       ctx.beginPath()
       ctx.moveTo(tx(d + a), ty(hb))
       ctx.lineTo(tx(d + a), ty(hb + hm))
@@ -95,7 +165,6 @@ export default function PatternCanvas() {
       ctx.fill()
       ctx.stroke()
 
-      // 3. Fold lines (dashed green)
       ctx.strokeStyle = '#16A34A'
       ctx.setLineDash([4, 3])
       ctx.beginPath()
@@ -111,75 +180,52 @@ export default function PatternCanvas() {
       ctx.setLineDash([])
     }
 
-    // Legend
     ctx.fillStyle = '#6B1D2A'
     ctx.font = `11px 'Noto Sans Thai'`
     ctx.textAlign = 'center'
-    ctx.fillText('■ ชิ้นส่วนหลัก+หาง', W * 0.25, H - 8)
+    ctx.fillText('■ ชิ้นส่วนหลัก', W * 0.15, H - 8)
     ctx.fillStyle = '#DC2626'
-    ctx.fillText('◆ ว่าว', W * 0.5, H - 8)
+    ctx.fillText('◆ ว่าว', W * 0.35, H - 8)
     ctx.fillStyle = '#16A34A'
-    ctx.fillText('--- เส้นพับ', W * 0.75, H - 8)
+    ctx.fillText('--- เส้นพับ', W * 0.55, H - 8)
+    ctx.fillStyle = '#CA8A04'
+    ctx.fillText('🟨 พื้นที่ทากาว', W * 0.8, H - 8)
   }
 
-  // ฟังก์ชันเช็กว่าเป็นมือถือ/แท็บเล็ตหรือไม่
   function isMobileDevice() {
     if (typeof window === 'undefined') return false;
     const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-    // ตรวจจับ iOS, Android และอุปกรณ์พกพาอื่นๆ
     const isMobileString = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
-    // ตรวจจับ iPad รุ่นใหม่ที่หลอกตัวตนว่าเป็น Mac
     const isMacMobile = navigator.maxTouchPoints > 1 && /macintosh/i.test(userAgent);
     return isMobileString || isMacMobile;
   }
 
-  // ฟังก์ชันดาวน์โหลด PNG
   async function handleDownloadPNG() {
     const canvas = canvasRef.current
     if (!canvas) return
-
     canvas.toBlob(async (blob) => {
       if (!blob) return
       const fileName = `lantern-pattern-n${inputs.n}.png`
       const file = new File([blob], fileName, { type: 'image/png' })
       const isMobile = isMobileDevice()
-
-      // ถ้าเป็นมือถือ/แท็บเล็ต และรองรับ Share ให้ใช้ Share
       if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({
-            files: [file],
-            title: 'Lantern Pattern',
-            text: 'แบบแปลนรูปคลี่โคมล้านนา'
-          })
-        } catch (error) {
-          console.log('Share cancelled', error)
-        }
+        try { await navigator.share({ files: [file], title: 'Lantern Pattern' }) } catch (err) { }
       } else {
-        // ถ้าเป็นคอมพิวเตอร์ (PC/Mac) ให้โหลดตรงๆ ทันที
         const imageURL = URL.createObjectURL(blob)
         const link = document.createElement('a')
-        link.href = imageURL
-        link.download = fileName
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+        link.href = imageURL; link.download = fileName; link.click()
         URL.revokeObjectURL(imageURL)
       }
     }, 'image/png')
   }
 
-  // ฟังก์ชันดาวน์โหลด PDF
   async function handleDownloadPDF() {
     const canvas = canvasRef.current
     if (!canvas) return
-    
     const imgData = canvas.toDataURL('image/png')
-    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
-
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: paperSize })
     const pdfWidth = pdf.internal.pageSize.getWidth()
     const pdfHeight = (canvas.height * pdfWidth) / canvas.width
-    
     if (pdfHeight > pdf.internal.pageSize.getHeight()) {
       const scaledHeight = pdf.internal.pageSize.getHeight()
       const scaledWidth = (canvas.width * scaledHeight) / canvas.height
@@ -189,155 +235,124 @@ export default function PatternCanvas() {
       const yOffset = (pdf.internal.pageSize.getHeight() - pdfHeight) / 2
       pdf.addImage(imgData, 'PNG', 0, yOffset, pdfWidth, pdfHeight)
     }
-
-    const fileName = `lantern-pattern-n${inputs.n}.pdf`
+    const fileName = `lantern-pattern-n${inputs.n}-${paperSize}.pdf`
     const isMobile = isMobileDevice()
-
     if (isMobile && navigator.canShare) {
       const pdfBlob = pdf.output('blob')
       const file = new File([pdfBlob], fileName, { type: 'application/pdf' })
-      
       if (navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({
-            files: [file],
-            title: 'Lantern Pattern PDF'
-          })
-          return; // ออกจากฟังก์ชันถ้าแชร์สำเร็จ
-        } catch (error) {
-          console.log('Share cancelled', error)
-        }
+        try { await navigator.share({ files: [file] }); return } catch (err) { }
       }
     }
-    
-    // ถ้าไม่ใช่ชุดมือถือ หรือ Share ไม่สำเร็จ/ไม่รองรับ ให้เซฟไฟล์ตรงๆ ทันที
     pdf.save(fileName)
   }
 
   useEffect(() => {
     drawPattern()
-  }, [inputs])
+  }, [inputs, theta, paperSize])
 
   useEffect(() => {
     const handleResize = () => drawPattern()
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
-  }, [inputs])
+  }, [inputs, theta])
 
   return (
     <section id="pattern">
-      <h2><span className="icon">✂️</span>จำลองและปรับแต่งโคม (Pattern & 3D)</h2>
-      <p>ปรับสัดส่วนเพื่อดูรูปคลี่และโมเดล 3D แบบเรียลไทม์</p>
-
-      {/* แผงควบคุมพารามิเตอร์ */}
-      <div className="calc-grid" style={{ marginBottom: '24px' }}>
-        <div className="calc-field">
-          <label>a (กว้างแผงสี่เหลี่ยม)</label>
-          <input type="number" name="a" value={inputs.a} step={0.5} onChange={handleChange} />
-        </div>
-        <div className="calc-field">
-          <label>b (กว้างแผงว่าว)</label>
-          <input type="number" name="b" value={inputs.b} step={0.5} onChange={handleChange} />
-        </div>
-        <div className="calc-field">
-          <label>h_b (สูงช่วงล่าง)</label>
-          <input type="number" name="hb" value={inputs.hb} step={0.5} onChange={handleChange} />
-        </div>
-        <div className="calc-field">
-          <label>h_m (สูงช่วงกลาง)</label>
-          <input type="number" name="hm" value={inputs.hm} step={0.5} onChange={handleChange} />
-        </div>
-        <div className="calc-field">
-          <label>h_t (สูงช่วงบน)</label>
-          <input type="number" name="ht" value={inputs.ht} step={0.5} onChange={handleChange} />
-        </div>
-        <div className="calc-field">
-          <label>จำนวนด้าน (n)</label>
-          <select name="n" value={inputs.n} onChange={handleChange}>
-            <option value={6}>6</option>
-            <option value={8}>8</option>
-            <option value={10}>10</option>
-            <option value={12}>12</option>
-          </select>
-        </div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '16px' }}>
+        <h2 style={{ margin: 0 }}><span className="icon">✂️</span>จำลองและปรับแต่งโคม</h2>
+        <span style={{ fontSize: '0.9rem', color: '#666' }}>(Pattern & 3D)</span>
       </div>
 
-      {/* แถบเลื่อนสำหรับการกางโคม 3D */}
-      <div style={{ marginBottom: '24px', background: 'var(--cream-light, #fdfbf7)', padding: '16px', borderRadius: '8px' }}>
-        <label style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginBottom: '8px' }}>
-          <span>ระดับการกางของโคม (Theta)</span>
-          <span>{theta}°</span>
-        </label>
-        <input 
-          type="range" 
-          min="5" 
-          max="90" 
-          value={theta} 
-          onChange={(e) => setTheta(parseFloat(e.target.value))}
-          style={{ width: '100%', cursor: 'pointer' }}
-        />
+      {/* ควบรวมพารามิเตอร์ทั้งหมดไว้ใน Grid เดียวกัน และบีบให้กระชับขึ้น */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', 
+        gap: '12px', 
+        marginBottom: '20px',
+        background: '#f8fafc',
+        padding: '12px',
+        borderRadius: '8px',
+        border: '1px solid #e2e8f0'
+      }}>
+        <div>
+          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+            <span>กว้างสี่เหลี่ยม (a)</span> <strong>{inputs.a}</strong>
+          </label>
+          <input type="range" name="a" min="2" max="15" step="0.5" value={inputs.a} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
+        </div>
+        <div>
+          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+            <span>กว้างว่าว (b)</span> <strong>{inputs.b}</strong>
+          </label>
+          <input type="range" name="b" min="2" max="15" step="0.5" value={inputs.b} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
+        </div>
+        <div>
+          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+            <span>สูงช่วงล่าง (h_b)</span> <strong>{inputs.hb}</strong>
+          </label>
+          <input type="range" name="hb" min="2" max="15" step="0.5" value={inputs.hb} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
+        </div>
+        <div>
+          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+            <span>สูงช่วงกลาง (h_m)</span> <strong>{inputs.hm}</strong>
+          </label>
+          <input type="range" name="hm" min="2" max="15" step="0.5" value={inputs.hm} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
+        </div>
+        <div>
+          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+            <span>สูงช่วงบน (h_t)</span> <strong>{inputs.ht}</strong>
+          </label>
+          <input type="range" name="ht" min="2" max="15" step="0.5" value={inputs.ht} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
+        </div>
+        <div>
+          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px', color: '#b45309' }}>
+            <span>ความยาวหาง (ltail)</span> <strong>{inputs.ltail}</strong>
+          </label>
+          <input type="range" name="ltail" min="5" max="60" step="1" value={inputs.ltail} onChange={handleChange} style={{ width: '100%', cursor: 'pointer', accentColor: '#d97706' }} />
+        </div>
+        <div>
+          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+            <span>จำนวนด้าน (n)</span> <strong>{inputs.n}</strong>
+          </label>
+          <input type="range" name="n" min="6" max="16" step="2" value={inputs.n} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
+        </div>
+        <div style={{ paddingLeft: '8px', borderLeft: '2px solid #cbd5e1' }}>
+          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px', color: '#0369a1' }}>
+            <span>ระดับการกาง (Theta)</span> <strong>{theta}°</strong>
+          </label>
+          <input type="range" min="5" max="90" value={theta} onChange={(e) => setTheta(parseFloat(e.target.value))} style={{ width: '100%', cursor: 'pointer', accentColor: '#0ea5e9' }} />
+        </div>
       </div>
 
       {/* พื้นที่แสดงผล 2D และ 3D */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
-        gap: '24px' 
-      }}>
-        {/* ฝั่งซ้าย: รูปคลี่ 2D */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <h3 style={{ fontSize: '1rem', margin: 0, color: 'var(--text-main, #333)' }}>
-              📄 แผ่นคลี่ 2D
-            </h3>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button 
-                onClick={handleDownloadPNG}
-                style={{
-                  padding: '6px 12px', backgroundColor: 'var(--maroon, #6b1d2a)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold'
-                }}
-              >
-                📥 PNG
-              </button>
-              <button 
-                onClick={handleDownloadPDF}
-                style={{
-                  padding: '6px 12px', backgroundColor: '#e11d48', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold'
-                }}
-              >
-                📄 PDF
-              </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <h3 style={{ fontSize: '1rem', margin: 0, color: 'var(--text-main, #333)' }}>📄 แผ่นคลี่ 2D</h3>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <select value={paperSize} onChange={(e) => setPaperSize(e.target.value)} style={{ padding: '4px 6px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '0.8rem' }}>
+                <option value="a5">A5</option><option value="a4">A4</option><option value="a3">A3</option><option value="letter">Letter</option><option value="legal">Legal</option>
+              </select>
+              <button onClick={handleDownloadPNG} style={{ padding: '4px 10px', backgroundColor: 'var(--maroon, #6b1d2a)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>📥 PNG</button>
+              <button onClick={handleDownloadPDF} style={{ padding: '4px 10px', backgroundColor: '#e11d48', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>📄 PDF</button>
             </div>
           </div>
-          <canvas
-            ref={canvasRef}
-            style={{
-              width: '100%',
-              height: 400,
-              border: '1.5px solid var(--cream-dark, #e2d8c3)',
-              borderRadius: 12,
-              background: 'var(--white, #fff)',
-              display: 'block',
-            }}
-          />
+          <canvas ref={canvasRef} style={{ width: '100%', height: 400, border: '1px solid var(--cream-dark, #e2d8c3)', borderRadius: 8, background: 'var(--white, #fff)', display: 'block' }} />
         </div>
 
-        {/* ฝั่งขวา: โมเดล 3D */}
         <div>
-          <h3 style={{ fontSize: '1rem', marginBottom: '12px', color: 'var(--text-main, #333)' }}>
-            🏮 พรีวิว 3D (ซูมและลากเมาส์เพื่อหมุน)
-          </h3>
-          <div style={{ marginTop: '-16px' }}>
-            <LanternViewer3D 
-              theta={theta} 
-              a={inputs.a} 
-              b={inputs.b} 
-              hb={inputs.hb} 
-              hm={inputs.hm} 
-              ht={inputs.ht} 
-              n={inputs.n} 
-            />
-          </div>
+          <h3 style={{ fontSize: '1rem', marginBottom: '8px', color: 'var(--text-main, #333)' }}>🏮 พรีวิว 3D</h3>
+          <LanternViewer3D 
+            theta={theta} 
+            a={inputs.a} 
+            b={inputs.b} 
+            hb={inputs.hb} 
+            hm={inputs.hm} 
+            ht={inputs.ht} 
+            n={inputs.n} 
+            ltail={inputs.ltail}
+          />
         </div>
       </div>
     </section>
