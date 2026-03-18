@@ -11,7 +11,7 @@ interface Props {
   hb?: number
   hm?: number
   ht?: number
-  ltail?: number // 💥 เพิ่ม Props รับความยาวหาง
+  ltail?: number 
 }
 
 // Helpers functions
@@ -47,7 +47,7 @@ function addLine(group: THREE.Group, pts: THREE.Vector3[], mat: THREE.Material) 
 }
 
 export default function LanternViewer3D({
-  theta, n = 8, a = 6.5, b = 7, hb = 6.5, hm = 8.5, ht = 6.5, ltail = 30 // 💥 รับ ltail มาใช้
+  theta, n = 8, a = 6.5, b = 7, hb = 6.5, hm = 8.5, ht = 6.5, ltail = 30
 }: Props) {
   const mountRef = useRef<HTMLDivElement>(null)
   const engineRef = useRef<{
@@ -191,7 +191,7 @@ export default function LanternViewer3D({
     }
   }, [])
 
-  // 2. UPDATE GEOMETRY (ทำงานเมื่อ Props/Slider ขยับ)
+  // 2. UPDATE GEOMETRY (คำนวณแบบ Rigid Body ตามมุมกระดาษ 2D จริง)
   useEffect(() => {
     if (!engineRef.current) return
     const { lanternGroup, materials, candleLight } = engineRef.current
@@ -203,38 +203,60 @@ export default function LanternViewer3D({
     }
 
     const thetaRad = (theta * Math.PI) / 180
-    const sinT = Math.sin(thetaRad)
-
-    materials.paper.opacity = 0.75 + 0.2 * sinT
-    materials.paper.emissiveIntensity = 0.15 + 0.4 * sinT
+    materials.paper.opacity = 0.85
+    materials.paper.emissiveIntensity = 0.35
 
     const Ht_total = hb + hm + ht
     const sc = 14 / (Ht_total || 1) 
 
-    const A = a * sc, B = b * sc
-    const Hb = hb * sc, Hm = hm * sc, Ht2 = ht * sc
-    
-    const H_total = Hb + Hm + Ht2
-    const y_bot = -H_total / 2
-    const y_mid1 = y_bot + Hb
-    const y_mid2 = y_bot + Hb + Hm
-    const y_top = y_bot + H_total
+    const A = a * sc
+    const H_b = hb * sc
+    const H_m = hm * sc
+    const H_t = ht * sc
+
+    // 🎯 ความกว้าง 3D ของส่วนสีแดง (B_target) คำนวณมาจากมุมยอด Theta และความสูง H_t โดยตรง
+    const B_target = 2 * H_t * Math.tan(thetaRad / 2)
 
     const slice_angle = (2 * Math.PI) / n
-    const delta_blue = (A / (A + B)) * slice_angle
+    
+    // รัศมีส่วนยอดและฐาน (มีเฉพาะความกว้างแผ่นสีฟ้า A)
+    const R_end = A / (2 * Math.sin(slice_angle / 2))
+    
+    // รัศมีส่วนป่องกลาง (แผ่นสีฟ้า A + ส่วนสีแดง B)
+    let R_mid = (A + B_target) / (2 * Math.sin(slice_angle / 2))
+    
+    // 🔥 บังคับให้ระยะกระจัด (Delta R) ไม่เกินความยาวกระดาษ (H_t, H_b) ป้องกันโมเดลฉีกขาด
+    let max_delta_R = H_t * 0.99
+    if (H_b < H_t) max_delta_R = Math.min(max_delta_R, H_b * 0.99)
 
-    const R_end_max = A / (2 * Math.sin(slice_angle / 2)) 
-    const R_mid_max = B === 0 ? R_end_max : B / (2 * Math.sin(((B) / (A + B)) * slice_angle / 2)) 
+    let delta_R = R_mid - R_end
+    if (delta_R > max_delta_R) {
+      delta_R = max_delta_R
+      R_mid = R_end + delta_R
+    }
 
-    const R_end = R_end_max * sinT
-    const R_mid = R_mid_max * sinT
+    // 🎯 คำนวณความสูงจริงในแนวแกน Y ที่หดสั้นลงเมื่อโคมกางป่องออก (ทฤษฎีพีทาโกรัส)
+    const Y_t = Math.sqrt(Math.max(0.001, H_t * H_t - delta_R * delta_R))
+    const Y_b = Math.sqrt(Math.max(0.001, H_b * H_b - delta_R * delta_R))
+    const Y_m = H_m 
+
+    const H_total = Y_b + Y_m + Y_t
+    const y_bot = -H_total / 2
+    const y_mid1 = y_bot + Y_b
+    const y_mid2 = y_mid1 + Y_m
+    const y_top = y_mid2 + Y_t
+
+    // หามุมที่แผ่นสีฟ้าใช้ไปบนวงกลม (เพื่อให้ความกว้าง 3D ของสีฟ้าเท่ากับค่า 'a' เสมอ กระดาษไม่ยืด)
+    const delta_blue = 2 * Math.asin(Math.min(1, A / (2 * R_mid)))
 
     for (let j = 0; j < n; j++) {
       const ang_base = j * slice_angle
 
+      // มุมส่วนยอด/ฐาน กระดาษสีฟ้าชิดกันหมด
       const ang_L_end = ang_base - slice_angle / 2
       const ang_R_end = ang_base + slice_angle / 2
 
+      // มุมส่วนกลาง โดนแทรกด้วยพื้นที่สีแดง (ช่องว่างระหว่างแผ่นฟ้า)
       const ang_L_mid = ang_base - delta_blue / 2
       const ang_R_mid = ang_base + delta_blue / 2
 
@@ -250,10 +272,12 @@ export default function LanternViewer3D({
       const b_top_L = new THREE.Vector3(R_end * Math.cos(ang_L_end), y_top, R_end * Math.sin(ang_L_end))
       const b_top_R = new THREE.Vector3(R_end * Math.cos(ang_R_end), y_top, R_end * Math.sin(ang_R_end))
 
+      // แผ่นหลัก (สีฟ้า)
       addQuad(lanternGroup, [b_bot_L, b_bot_R, b_m1_R, b_m1_L], materials.paper) 
       addQuad(lanternGroup, [b_m1_L, b_m1_R, b_m2_R, b_m2_L], materials.paper) 
       addQuad(lanternGroup, [b_m2_L, b_m2_R, b_top_R, b_top_L], materials.paper) 
 
+      // แผ่นแทรก (สีแดง) เชื่อมกับแผ่นฟ้าของ segment ถัดไป
       const ang_base_next = (j + 1) * slice_angle
       const ang_L_mid_next = ang_base_next - delta_blue / 2
 
@@ -264,62 +288,55 @@ export default function LanternViewer3D({
       addQuad(lanternGroup, [b_m1_R, b_next_m1_L, b_next_m2_L, b_m2_R], materials.paper)
       addTri(lanternGroup, b_m2_R, b_next_m2_L, b_top_R, materials.paper)
 
-      const h_spike_ref = 9; 
-      const H_spike = h_spike_ref * sc; 
-      const R_spike_tip = R_end * 0.6; 
-      
-      const spikeTip = new THREE.Vector3(
-        R_spike_tip * Math.cos(ang_base), 
-        y_top + H_spike, 
-        R_spike_tip * Math.sin(ang_base)
-      );
-      
-      addTri(lanternGroup, b_top_L, spikeTip, b_top_R, materials.paper);
-      addLine(lanternGroup, [b_top_L, spikeTip, b_top_R], materials.edge);
+      // ส่วนยอดแหลม
+      const h_spike_ref = 9 
+      const H_spike = h_spike_ref * sc 
+      const R_spike_tip = R_end * 0.6 
+      const spikeTip = new THREE.Vector3(R_spike_tip * Math.cos(ang_base), y_top + H_spike, R_spike_tip * Math.sin(ang_base))
+      addTri(lanternGroup, b_top_L, spikeTip, b_top_R, materials.paper)
+      addLine(lanternGroup, [b_top_L, spikeTip, b_top_R], materials.edge)
 
-      // 💥 วาดหาง โดยรับค่าความยาวจาก Slider (ltail)
-      const l_tail_ref = ltail; 
-      const L_tail = l_tail_ref * sc; 
-      const tip_prop = 0.15; 
-      
-      const t_botL_vert = new THREE.Vector3(b_bot_L.x, y_bot - L_tail, b_bot_L.z);
-      const t_botR_vert = new THREE.Vector3(b_bot_R.x, y_bot - L_tail, b_bot_R.z);
+      // ส่วนหาง (รับความยาว ltail)
+      const L_tail = ltail * sc 
+      const tip_prop = 0.15 
+      const t_botL_vert = new THREE.Vector3(b_bot_L.x, y_bot - L_tail, b_bot_L.z)
+      const t_botR_vert = new THREE.Vector3(b_bot_R.x, y_bot - L_tail, b_bot_R.z)
       const decorativeTip = new THREE.Vector3(
         b_bot_L.clone().lerp(b_bot_R, 0.5).x, 
         y_bot - L_tail - L_tail * tip_prop, 
         b_bot_L.clone().lerp(b_bot_R, 0.5).z
-      );
+      )
 
-      addQuad(lanternGroup, [b_bot_L, b_bot_R, t_botR_vert, t_botL_vert], materials.paper);
-      addTri(lanternGroup, t_botL_vert, decorativeTip, t_botR_vert, materials.paper);
-      addLine(lanternGroup, [b_bot_L, t_botL_vert, decorativeTip, t_botR_vert, b_bot_R], materials.edge);
+      addQuad(lanternGroup, [b_bot_L, b_bot_R, t_botR_vert, t_botL_vert], materials.paper)
+      addTri(lanternGroup, t_botL_vert, decorativeTip, t_botR_vert, materials.paper)
+      addLine(lanternGroup, [b_bot_L, t_botL_vert, decorativeTip, t_botR_vert, b_bot_R], materials.edge)
 
+      // วาดเส้นขอบตกแต่ง
       addLine(lanternGroup, [b_bot_L, b_m1_L, b_m2_L, b_top_L], materials.edge)
       addLine(lanternGroup, [b_bot_R, b_m1_R, b_m2_R, b_top_R], materials.edge)
       addLine(lanternGroup, [b_bot_L, b_bot_R], materials.edge)
       addLine(lanternGroup, [b_top_L, b_top_R], materials.edge)
 
+      // วาดรอยพับ
       addLine(lanternGroup, [b_m1_L, b_m1_R], materials.fold)
       addLine(lanternGroup, [b_m2_L, b_m2_R], materials.fold)
-      
       addLine(lanternGroup, [b_bot_R, b_next_m1_L], materials.fold)
       addLine(lanternGroup, [b_m1_R, b_next_m1_L], materials.fold)
       addLine(lanternGroup, [b_m2_R, b_next_m2_L], materials.fold)
       addLine(lanternGroup, [b_top_R, b_next_m2_L], materials.fold)
     }
 
-    const candleY = y_bot + Hb + Hm / 2
+    const candleY = y_bot + Y_b + Y_m / 2
     const candleGeo = new THREE.SphereGeometry(0.22, 10, 10)
     const candle = new THREE.Mesh(candleGeo, materials.candle)
     candle.position.set(0, candleY, 0)
     lanternGroup.add(candle)
 
     candleLight.position.set(0, candleY, 0)
-    candleLight.userData.baseIntensity = 2.5 * sinT * sinT
-    candleLight.distance = 20 * sinT + 5
+    candleLight.userData.baseIntensity = 2.5
+    candleLight.distance = 25
 
-  // 💥 เพิ่ม ltail เข้าไปใน dependency เพื่อให้ 3D re-render ตอนปรับหาง
-  }, [theta, n, a, b, hb, hm, ht, ltail])
+  }, [theta, n, a, b, hb, hm, ht, ltail]) // ใส่ b เผื่อไว้แม้สมการใหม่จะคุมด้วย theta แล้วครับ
 
   return (
     <div style={{ position: 'relative', marginTop: 16 }}>
