@@ -19,7 +19,7 @@ const DEFAULT: InputsState = { a: 6.5, b: 7, hb: 6.5, hm: 8.5, ht: 6.5, n: 8, lt
 export default function PatternCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [inputs, setInputs] = useState<InputsState>(DEFAULT)
-  const [theta, setTheta] = useState<number>(90)
+  const [theta, setTheta] = useState<number>(45)
   const [paperSize, setPaperSize] = useState<string>('a4')
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -264,65 +264,83 @@ export default function PatternCanvas() {
         <span style={{ fontSize: '0.9rem', color: '#666' }}>(Pattern & 3D)</span>
       </div>
 
-      {/* ควบรวมพารามิเตอร์ทั้งหมดไว้ใน Grid เดียวกัน และบีบให้กระชับขึ้น */}
+      {/* 🎯 จัดโครงสร้าง Container หลักใหม่ให้ครอบคลุมทั้ง 2 ส่วน */}
       <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', 
-        gap: '12px', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '16px',
         marginBottom: '20px',
         background: '#f8fafc',
-        padding: '12px',
+        padding: '16px',
         borderRadius: '8px',
         border: '1px solid #e2e8f0'
       }}>
-        <div>
-          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
-            <span>กว้างสี่เหลี่ยม (a)</span> <strong>{inputs.a}</strong>
-          </label>
-          <input type="range" name="a" min="2" max="15" step="0.5" value={inputs.a} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
+        
+        {/* 🎯 ส่วนที่ 1: Grid สำหรับพารามิเตอร์ขนาด (อยู่ด้านบนเสมอ) */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', 
+          gap: '16px' 
+        }}>
+          <div>
+            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+              <span>กว้างสี่เหลี่ยม (a)</span> <strong>{inputs.a}</strong>
+            </label>
+            <input type="range" name="a" min="2" max="15" step="0.5" value={inputs.a} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
+          </div>
+          <div>
+            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+              <span>กว้างว่าว (b)</span> <strong>{inputs.b}</strong>
+            </label>
+            <input type="range" name="b" min="2" max="15" step="0.5" value={inputs.b} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
+          </div>
+          <div>
+            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+              <span>สูงช่วงล่าง (h_b)</span> <strong>{inputs.hb}</strong>
+            </label>
+            <input type="range" name="hb" min="2" max="15" step="0.5" value={inputs.hb} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
+          </div>
+          <div>
+            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+              <span>สูงช่วงกลาง (h_m)</span> <strong>{inputs.hm}</strong>
+            </label>
+            <input type="range" name="hm" min="2" max="15" step="0.5" value={inputs.hm} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
+          </div>
+          <div>
+            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+              <span>สูงช่วงบน (h_t)</span> <strong>{inputs.ht}</strong>
+            </label>
+            <input type="range" name="ht" min="2" max="15" step="0.5" value={inputs.ht} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
+          </div>
+          <div>
+            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px', color: '#b45309' }}>
+              <span>ความยาวหาง (ltail)</span> <strong>{inputs.ltail}</strong>
+            </label>
+            <input type="range" name="ltail" min="5" max="60" step="1" value={inputs.ltail} onChange={handleChange} style={{ width: '100%', cursor: 'pointer', accentColor: '#d97706' }} />
+          </div>
+          <div>
+            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+              <span>จำนวนด้าน (n)</span> <strong>{inputs.n}</strong>
+            </label>
+            <input type="range" name="n" min="6" max="16" step="2" value={inputs.n} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
+          </div>
         </div>
-        <div>
-          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
-            <span>กว้างว่าว (b)</span> <strong>{inputs.b}</strong>
+
+        {/* 🎯 ส่วนที่ 2: Slider ระดับการกาง (แยกออกมาอยู่ล่างสุด และกาง 100%) */}
+        <div style={{ paddingTop: '16px', borderTop: '2px solid #cbd5e1' }}>
+          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '8px', color: '#0369a1', fontWeight: 'bold' }}>
+            <span>ระดับการกาง (Theta)</span> <span>{theta}°</span>
           </label>
-          <input type="range" name="b" min="2" max="15" step="0.5" value={inputs.b} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
+          <input 
+            type="range" 
+            min="5" 
+            max="90" 
+            value={theta} 
+            onChange={(e) => setTheta(parseFloat(e.target.value))} 
+            style={{ width: '100%', cursor: 'pointer', accentColor: '#0ea5e9' }} 
+          />
         </div>
-        <div>
-          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
-            <span>สูงช่วงล่าง (h_b)</span> <strong>{inputs.hb}</strong>
-          </label>
-          <input type="range" name="hb" min="2" max="15" step="0.5" value={inputs.hb} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
-        </div>
-        <div>
-          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
-            <span>สูงช่วงกลาง (h_m)</span> <strong>{inputs.hm}</strong>
-          </label>
-          <input type="range" name="hm" min="2" max="15" step="0.5" value={inputs.hm} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
-        </div>
-        <div>
-          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
-            <span>สูงช่วงบน (h_t)</span> <strong>{inputs.ht}</strong>
-          </label>
-          <input type="range" name="ht" min="2" max="15" step="0.5" value={inputs.ht} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
-        </div>
-        <div>
-          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px', color: '#b45309' }}>
-            <span>ความยาวหาง (ltail)</span> <strong>{inputs.ltail}</strong>
-          </label>
-          <input type="range" name="ltail" min="5" max="60" step="1" value={inputs.ltail} onChange={handleChange} style={{ width: '100%', cursor: 'pointer', accentColor: '#d97706' }} />
-        </div>
-        <div>
-          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
-            <span>จำนวนด้าน (n)</span> <strong>{inputs.n}</strong>
-          </label>
-          <input type="range" name="n" min="6" max="16" step="2" value={inputs.n} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
-        </div>
-        <div style={{ paddingLeft: '8px', borderLeft: '2px solid #cbd5e1' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px', color: '#0369a1' }}>
-            <span>ระดับการกาง (Theta)</span> <strong>{theta}°</strong>
-          </label>
-          <input type="range" min="5" max="90" value={theta} onChange={(e) => setTheta(parseFloat(e.target.value))} style={{ width: '100%', cursor: 'pointer', accentColor: '#0ea5e9' }} />
-        </div>
+
       </div>
 
       {/* พื้นที่แสดงผล 2D และ 3D */}

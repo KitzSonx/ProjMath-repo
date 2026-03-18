@@ -72,33 +72,45 @@ export default function LanternViewer3D({
     mount.appendChild(renderer.domElement)
 
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color(0x120608)
-    scene.fog = new THREE.FogExp2(0x120608, 0.015)
+    
+    // 🎯 1. แก้ไขพื้นหลังเป็นสีขาว และลบ Fog
+    scene.background = new THREE.Color(0xFFFFFF) 
 
     const camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 300)
     camera.position.set(0, 4, 45) 
     camera.lookAt(0, 0, 0)
 
-    scene.add(new THREE.AmbientLight(0xffe0b0, 0.3))
-    const topLight = new THREE.DirectionalLight(0xfff0d0, 0.5)
-    topLight.position.set(3, 15, 8)
+    // 🎯 3. ปรับเพิ่มความสว่างของแสงให้โมเดลดูขาวสะอาดบนพื้นหลังขาว
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6)) // Ambient ขาว, สว่างขึ้น
+    const topLight = new THREE.DirectionalLight(0xffffff, 1.0) // Directional ขาว, สว่างเต็มที่
+    topLight.position.set(5, 20, 10)
     topLight.castShadow = true
     scene.add(topLight)
 
-    const candleLight = new THREE.PointLight(0xff9922, 0, 25)
+    const candleLight = new THREE.PointLight(0xffaa55, 0, 30) // ปรับสีไฟเทียนนิดหน่อย
     scene.add(candleLight)
 
     const lanternGroup = new THREE.Group()
     scene.add(lanternGroup)
 
     const materials = {
-      paper: new THREE.MeshStandardMaterial({
-        color: 0xfff0c0, emissive: 0xd0a040, roughness: 0.82, side: THREE.DoubleSide, transparent: true,
-      }),
-      edge: new THREE.LineBasicMaterial({ color: 0xc8943e }), 
-      fold: new THREE.LineBasicMaterial({ color: 0x4a8a3a, transparent: true, opacity: 0.4 }),
-      candle: new THREE.MeshStandardMaterial({ color: 0xffee88, emissive: 0xffcc33, emissiveIntensity: 4 })
-    }
+    // สีชมพูพาสเทล (Pastel Pink) — ชุ่มฉ่ำกว่าเดิม
+    paperPaleRed: new THREE.MeshStandardMaterial({
+      color: 0xFFB3C6, emissive: 0xE07090, emissiveIntensity: 0.3,
+      roughness: 0.75, side: THREE.DoubleSide, transparent: true, opacity: 0.92,
+    }),
+    // สีฟ้าพาสเทล (Pastel Blue) — สดและลึกขึ้น
+    paperPaleBlue: new THREE.MeshStandardMaterial({
+      color: 0xB3D4FF, emissive: 0x6699DD, emissiveIntensity: 0.25,
+      roughness: 0.75, side: THREE.DoubleSide, transparent: true, opacity: 0.92,
+    }),
+    // เส้นขอบสีส้มอบอุ่น (Warm Terracotta) — นุ่มกว่า GoldenRod เดิม
+    edge: new THREE.LineBasicMaterial({ color: 0xD4955A, linewidth: 2 }),
+    // เส้นพับสีเขียวมิ้นต์ (Mint Green) — สดกว่า ForestGreen เดิม
+    fold: new THREE.LineBasicMaterial({ color: 0x6BBF7A, linewidth: 1.5, transparent: true, opacity: 0.6 }),
+    // เปลวเทียน — เพิ่ม emissiveIntensity ลงนิด ไม่ให้ตัดกันเกินไป
+    candle: new THREE.MeshStandardMaterial({ color: 0xFFE066, emissive: 0xFFD700, emissiveIntensity: 3.5 })
+  }
 
     engineRef.current = { scene, lanternGroup, candleLight, materials }
 
@@ -170,7 +182,7 @@ export default function LanternViewer3D({
       lanternGroup.rotation.x = rotX
 
       const baseIntensity = candleLight.userData.baseIntensity || 0
-      candleLight.intensity = baseIntensity * (0.9 + Math.sin(Date.now() * 0.004) * 0.1)
+      candleLight.intensity = baseIntensity * (0.95 + Math.sin(Date.now() * 0.005) * 0.05)
       renderer.render(scene, camera)
     }
     animate()
@@ -202,9 +214,15 @@ export default function LanternViewer3D({
       if (child.geometry) child.geometry.dispose()
     }
 
+    // แปลงมุมเป็นเรเดียน
     const thetaRad = (theta * Math.PI) / 180
-    materials.paper.opacity = 0.85
-    materials.paper.emissiveIntensity = 0.35
+    
+    // 🎯 ปรับความสว่าง emissive ของวัสดุทั้งสองตัว
+    const baseEmissive = 0.4
+    const emissiveRange = 0.4
+    const sinT = Math.sin(thetaRad)
+    materials.paperPaleRed.emissiveIntensity = baseEmissive + emissiveRange * sinT
+    materials.paperPaleBlue.emissiveIntensity = baseEmissive + emissiveRange * sinT
 
     const Ht_total = hb + hm + ht
     const sc = 14 / (Ht_total || 1) 
@@ -214,31 +232,21 @@ export default function LanternViewer3D({
     const H_m = hm * sc
     const H_t = ht * sc
 
-    // 🎯 ความกว้าง 3D ของส่วนสีแดง (B_target) คำนวณมาจากมุมยอด Theta และความสูง H_t โดยตรง
-    const B_target = 2 * H_t * Math.tan(thetaRad / 2)
+    // ใช้ตรีโกณมิติพื้นฐาน h = L*sin(theta) และระยะป่อง = L*cos(theta)
+    const Y_t = H_t * Math.sin(thetaRad)
+    const delta_R = H_t * Math.cos(thetaRad) // ระยะที่บานพับดันออกด้านข้างแนวแกน X
 
-    const slice_angle = (2 * Math.PI) / n
-    
-    // รัศมีส่วนยอดและฐาน (มีเฉพาะความกว้างแผ่นสีฟ้า A)
-    const R_end = A / (2 * Math.sin(slice_angle / 2))
-    
-    // รัศมีส่วนป่องกลาง (แผ่นสีฟ้า A + ส่วนสีแดง B)
-    let R_mid = (A + B_target) / (2 * Math.sin(slice_angle / 2))
-    
-    // 🔥 บังคับให้ระยะกระจัด (Delta R) ไม่เกินความยาวกระดาษ (H_t, H_b) ป้องกันโมเดลฉีกขาด
-    let max_delta_R = H_t * 0.99
-    if (H_b < H_t) max_delta_R = Math.min(max_delta_R, H_b * 0.99)
-
-    let delta_R = R_mid - R_end
-    if (delta_R > max_delta_R) {
-      delta_R = max_delta_R
-      R_mid = R_end + delta_R
-    }
-
-    // 🎯 คำนวณความสูงจริงในแนวแกน Y ที่หดสั้นลงเมื่อโคมกางป่องออก (ทฤษฎีพีทาโกรัส)
-    const Y_t = Math.sqrt(Math.max(0.001, H_t * H_t - delta_R * delta_R))
+    // พีทาโกรัสหาความสูงฐาน (Y_b) ที่สอดคล้องกับระยะ delta_R
     const Y_b = Math.sqrt(Math.max(0.001, H_b * H_b - delta_R * delta_R))
     const Y_m = H_m 
+
+    // แก้ไข logic จำนวนด้าน ให้หารครึ่ง เพราะ 1 ลูปวาด 2 แผ่นสลับกัน
+    const numPairs = Math.max(1, Math.round(n / 2)) 
+    const slice_angle = (2 * Math.PI) / numPairs
+
+    // คำนวณรัศมี
+    const R_end = A / (2 * Math.sin(slice_angle / 2)) // รัศมีบน/ล่าง (คงที่)
+    const R_mid = R_end + delta_R // รัศมีตรงกลางป่องออกตาม delta_R
 
     const H_total = Y_b + Y_m + Y_t
     const y_bot = -H_total / 2
@@ -246,17 +254,18 @@ export default function LanternViewer3D({
     const y_mid2 = y_mid1 + Y_m
     const y_top = y_mid2 + Y_t
 
-    // หามุมที่แผ่นสีฟ้าใช้ไปบนวงกลม (เพื่อให้ความกว้าง 3D ของสีฟ้าเท่ากับค่า 'a' เสมอ กระดาษไม่ยืด)
+    // หามุมที่แผ่นหลักใช้ไปบนวงกลม (เพื่อให้ความกว้าง 3D เท่ากับค่า 'a' เสมอ กระดาษไม่ยืด)
     const delta_blue = 2 * Math.asin(Math.min(1, A / (2 * R_mid)))
 
-    for (let j = 0; j < n; j++) {
+    // รันลูปเท่ากับจำนวน numPairs
+    for (let j = 0; j < numPairs; j++) {
       const ang_base = j * slice_angle
 
-      // มุมส่วนยอด/ฐาน กระดาษสีฟ้าชิดกันหมด
+      // มุมส่วนยอด/ฐาน
       const ang_L_end = ang_base - slice_angle / 2
       const ang_R_end = ang_base + slice_angle / 2
 
-      // มุมส่วนกลาง โดนแทรกด้วยพื้นที่สีแดง (ช่องว่างระหว่างแผ่นฟ้า)
+      // มุมส่วนกลาง
       const ang_L_mid = ang_base - delta_blue / 2
       const ang_R_mid = ang_base + delta_blue / 2
 
@@ -272,28 +281,30 @@ export default function LanternViewer3D({
       const b_top_L = new THREE.Vector3(R_end * Math.cos(ang_L_end), y_top, R_end * Math.sin(ang_L_end))
       const b_top_R = new THREE.Vector3(R_end * Math.cos(ang_R_end), y_top, R_end * Math.sin(ang_R_end))
 
-      // แผ่นหลัก (สีฟ้า)
-      addQuad(lanternGroup, [b_bot_L, b_bot_R, b_m1_R, b_m1_L], materials.paper) 
-      addQuad(lanternGroup, [b_m1_L, b_m1_R, b_m2_R, b_m2_L], materials.paper) 
-      addQuad(lanternGroup, [b_m2_L, b_m2_R, b_top_R, b_top_L], materials.paper) 
+      // 🎯 2. ใช้สีแดงอ่อน (paperPaleRed) สำหรับแผ่นหลัก (แผงสี่เหลี่ยม)
+      addQuad(lanternGroup, [b_bot_L, b_bot_R, b_m1_R, b_m1_L], materials.paperPaleBlue) 
+      addQuad(lanternGroup, [b_m1_L, b_m1_R, b_m2_R, b_m2_L], materials.paperPaleBlue) 
+      addQuad(lanternGroup, [b_m2_L, b_m2_R, b_top_R, b_top_L], materials.paperPaleBlue) 
 
-      // แผ่นแทรก (สีแดง) เชื่อมกับแผ่นฟ้าของ segment ถัดไป
+      // แผ่นแทรก เชื่อมกับแผ่นหลักของ segment ถัดไป
       const ang_base_next = (j + 1) * slice_angle
       const ang_L_mid_next = ang_base_next - delta_blue / 2
 
       const b_next_m1_L = new THREE.Vector3(R_mid * Math.cos(ang_L_mid_next), y_mid1, R_mid * Math.sin(ang_L_mid_next))
       const b_next_m2_L = new THREE.Vector3(R_mid * Math.cos(ang_L_mid_next), y_mid2, R_mid * Math.sin(ang_L_mid_next))
 
-      addTri(lanternGroup, b_bot_R, b_next_m1_L, b_m1_R, materials.paper)
-      addQuad(lanternGroup, [b_m1_R, b_next_m1_L, b_next_m2_L, b_m2_R], materials.paper)
-      addTri(lanternGroup, b_m2_R, b_next_m2_L, b_top_R, materials.paper)
+      // 🎯 2. ใช้สีฟ้าอ่อน (paperPaleBlue) สำหรับแผ่นแทรก (แผงว่าว)
+      addTri(lanternGroup, b_bot_R, b_next_m1_L, b_m1_R, materials.paperPaleRed)
+      addQuad(lanternGroup, [b_m1_R, b_next_m1_L, b_next_m2_L, b_m2_R], materials.paperPaleRed)
+      addTri(lanternGroup, b_m2_R, b_next_m2_L, b_top_R, materials.paperPaleRed)
 
       // ส่วนยอดแหลม
       const h_spike_ref = 9 
       const H_spike = h_spike_ref * sc 
       const R_spike_tip = R_end * 0.6 
       const spikeTip = new THREE.Vector3(R_spike_tip * Math.cos(ang_base), y_top + H_spike, R_spike_tip * Math.sin(ang_base))
-      addTri(lanternGroup, b_top_L, spikeTip, b_top_R, materials.paper)
+      // 🎯 ใช้สีแดงอ่อนเพื่อให้เข้ากับแผงหลัก
+      addTri(lanternGroup, b_top_L, spikeTip, b_top_R, materials.paperPaleBlue)
       addLine(lanternGroup, [b_top_L, spikeTip, b_top_R], materials.edge)
 
       // ส่วนหาง (รับความยาว ltail)
@@ -307,8 +318,9 @@ export default function LanternViewer3D({
         b_bot_L.clone().lerp(b_bot_R, 0.5).z
       )
 
-      addQuad(lanternGroup, [b_bot_L, b_bot_R, t_botR_vert, t_botL_vert], materials.paper)
-      addTri(lanternGroup, t_botL_vert, decorativeTip, t_botR_vert, materials.paper)
+      // 🎯 ใช้สีฟ้าอ่อนเพื่อให้เข้ากับแผงแทรก
+      addQuad(lanternGroup, [b_bot_L, b_bot_R, t_botR_vert, t_botL_vert], materials.paperPaleBlue)
+      addTri(lanternGroup, t_botL_vert, decorativeTip, t_botR_vert, materials.paperPaleBlue)
       addLine(lanternGroup, [b_bot_L, t_botL_vert, decorativeTip, t_botR_vert, b_bot_R], materials.edge)
 
       // วาดเส้นขอบตกแต่ง
@@ -333,10 +345,10 @@ export default function LanternViewer3D({
     lanternGroup.add(candle)
 
     candleLight.position.set(0, candleY, 0)
-    candleLight.userData.baseIntensity = 2.5
+    candleLight.userData.baseIntensity = 8.0 // 🎯 เพิ่มความสว่างของไฟเทียนสำหรับพื้นหลังขาว
     candleLight.distance = 25
 
-  }, [theta, n, a, b, hb, hm, ht, ltail]) // ใส่ b เผื่อไว้แม้สมการใหม่จะคุมด้วย theta แล้วครับ
+  }, [theta, n, a, b, hb, hm, ht, ltail]) 
 
   return (
     <div style={{ position: 'relative', marginTop: 16 }}>
@@ -344,7 +356,7 @@ export default function LanternViewer3D({
         ref={mountRef}
         style={{
           width: '100%', height: 400, borderRadius: 12, overflow: 'hidden',
-          background: '#120608', cursor: 'grab', userSelect: 'none',
+          background: '#FFFFFF', cursor: 'grab', userSelect: 'none', // 🎯 แก้ CSS container
         }}
       />
     </div>
