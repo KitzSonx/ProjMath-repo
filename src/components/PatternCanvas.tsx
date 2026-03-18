@@ -259,76 +259,90 @@ export default function PatternCanvas() {
 
   return (
     <section id="pattern">
+      {/* 🎯 สไตล์พิเศษเพื่อบังคับให้ Slider แบ่งครึ่ง 2 ฝั่งบนมือถือ */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .params-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+        }
+        @media (min-width: 640px) {
+          .params-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+        @media (min-width: 1024px) {
+          .params-grid {
+            grid-template-columns: repeat(4, 1fr);
+          }
+        }
+      `}} />
+
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '16px' }}>
         <h2 style={{ margin: 0 }}><span className="icon">✂️</span>จำลองและปรับแต่งโคม</h2>
         <span style={{ fontSize: '0.9rem', color: '#666' }}>(Pattern & 3D)</span>
       </div>
 
-      {/* 🎯 จัดโครงสร้าง Container หลักใหม่ให้ครอบคลุมทั้ง 2 ส่วน */}
       <div style={{ 
         display: 'flex', 
         flexDirection: 'column', 
-        gap: '16px',
+        gap: '12px',
         marginBottom: '20px',
         background: '#f8fafc',
-        padding: '16px',
+        padding: '12px', // ลด padding ลงนิดหน่อยให้ประหยัดพื้นที่ยิ่งขึ้น
         borderRadius: '8px',
         border: '1px solid #e2e8f0'
       }}>
         
-        {/* 🎯 ส่วนที่ 1: Grid สำหรับพารามิเตอร์ขนาด (อยู่ด้านบนเสมอ) */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', 
-          gap: '16px' 
-        }}>
+        {/* 🎯 นำคลาส params-grid มาใช้ เพื่อให้เป็น 2 คอลัมน์บนมือถือ */}
+        <div className="params-grid">
           <div>
-            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
-              <span>กว้างสี่เหลี่ยม (a)</span> <strong>{inputs.a}</strong>
+            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '2px' }}>
+              <span>กว้างหลัก (a)</span> <strong>{inputs.a}</strong>
             </label>
             <input type="range" name="a" min="2" max="15" step="0.5" value={inputs.a} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
           </div>
           <div>
-            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '2px' }}>
               <span>กว้างว่าว (b)</span> <strong>{inputs.b}</strong>
             </label>
             <input type="range" name="b" min="2" max="15" step="0.5" value={inputs.b} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
           </div>
           <div>
-            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '2px' }}>
               <span>สูงช่วงล่าง (h_b)</span> <strong>{inputs.hb}</strong>
             </label>
             <input type="range" name="hb" min="2" max="15" step="0.5" value={inputs.hb} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
           </div>
           <div>
-            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '2px' }}>
               <span>สูงช่วงกลาง (h_m)</span> <strong>{inputs.hm}</strong>
             </label>
             <input type="range" name="hm" min="2" max="15" step="0.5" value={inputs.hm} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
           </div>
           <div>
-            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '2px' }}>
               <span>สูงช่วงบน (h_t)</span> <strong>{inputs.ht}</strong>
             </label>
             <input type="range" name="ht" min="2" max="15" step="0.5" value={inputs.ht} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
           </div>
           <div>
-            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px', color: '#b45309' }}>
-              <span>ความยาวหาง (ltail)</span> <strong>{inputs.ltail}</strong>
+            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '2px', color: '#b45309' }}>
+              <span>หาง (ltail)</span> <strong>{inputs.ltail}</strong>
             </label>
             <input type="range" name="ltail" min="5" max="60" step="1" value={inputs.ltail} onChange={handleChange} style={{ width: '100%', cursor: 'pointer', accentColor: '#d97706' }} />
           </div>
           <div>
-            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px' }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '2px' }}>
               <span>จำนวนด้าน (n)</span> <strong>{inputs.n}</strong>
             </label>
             <input type="range" name="n" min="6" max="16" step="2" value={inputs.n} onChange={handleChange} style={{ width: '100%', cursor: 'pointer' }} />
           </div>
         </div>
 
-        {/* 🎯 ส่วนที่ 2: Slider ระดับการกาง (แยกออกมาอยู่ล่างสุด และกาง 100%) */}
-        <div style={{ paddingTop: '16px', borderTop: '2px solid #cbd5e1' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '8px', color: '#0369a1', fontWeight: 'bold' }}>
+        {/* 🎯 Slider ระดับการกาง (Theta) แยกอยู่ล่างสุด และกางเต็ม 100% */}
+        <div style={{ paddingTop: '12px', borderTop: '2px solid #cbd5e1' }}>
+          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '6px', color: '#0369a1', fontWeight: 'bold' }}>
             <span>ระดับการกาง (Theta)</span> <span>{theta}°</span>
           </label>
           <input 
