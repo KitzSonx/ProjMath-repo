@@ -42,7 +42,10 @@ export default function PatternCanvas() {
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, W, H)
 
-    const sinT = Math.sin((theta * Math.PI) / 180)
+    // 🎯 แก้ไขสมการตรงนี้: แปลงมุมยอด (Apex) เป็นมุมฐาน (Base) ให้เหมือน 3D
+    const baseAngleDeg = (180 - theta) / 2
+    const baseThetaRad = (baseAngleDeg * Math.PI) / 180
+    const sinT = Math.sin(baseThetaRad)
     
     const a = inputs.a * sinT
     const b = inputs.b * sinT
@@ -259,7 +262,6 @@ export default function PatternCanvas() {
 
   return (
     <section id="pattern">
-      {/* 🎯 สไตล์พิเศษเพื่อบังคับให้ Slider แบ่งครึ่ง 2 ฝั่งบนมือถือ */}
       <style dangerouslySetInnerHTML={{ __html: `
         .params-grid {
           display: grid;
@@ -289,12 +291,11 @@ export default function PatternCanvas() {
         gap: '12px',
         marginBottom: '20px',
         background: '#f8fafc',
-        padding: '12px', // ลด padding ลงนิดหน่อยให้ประหยัดพื้นที่ยิ่งขึ้น
+        padding: '12px', 
         borderRadius: '8px',
         border: '1px solid #e2e8f0'
       }}>
         
-        {/* 🎯 นำคลาส params-grid มาใช้ เพื่อให้เป็น 2 คอลัมน์บนมือถือ */}
         <div className="params-grid">
           <div>
             <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '2px' }}>
@@ -340,15 +341,14 @@ export default function PatternCanvas() {
           </div>
         </div>
 
-        {/* 🎯 Slider ระดับการกาง (Theta) แยกอยู่ล่างสุด และกางเต็ม 100% */}
         <div style={{ paddingTop: '12px', borderTop: '2px solid #cbd5e1' }}>
           <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '6px', color: '#0369a1', fontWeight: 'bold' }}>
             <span>ระดับการกาง (Theta)</span> <span>{theta}°</span>
           </label>
           <input 
             type="range" 
-            min="5" 
-            max="90" 
+            min="0" 
+            max="180" 
             value={theta} 
             onChange={(e) => setTheta(parseFloat(e.target.value))} 
             style={{ width: '100%', cursor: 'pointer', accentColor: '#0ea5e9' }} 
@@ -357,7 +357,6 @@ export default function PatternCanvas() {
 
       </div>
 
-      {/* พื้นที่แสดงผล 2D และ 3D */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
