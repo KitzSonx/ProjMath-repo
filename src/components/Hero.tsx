@@ -6,12 +6,12 @@ export default function Hero() {
       <span className={styles.lanternIcon}>🏮</span>
       <h1 className={styles.title}>โคมล้านนาพับเก็บได้</h1>
       <p className={styles.subtitle}>
-        การสร้างแบบจำลองเชิงคณิตศาสตร์ของโคมล้านนาแบบพับเก็บได้จากกระดาษใยสับปะรด
+        การประยุกต์ความสัมพันธ์ทางคณิตศาสตร์ในการสร้างแบบจำลองรูปคลี่โคมล้านนาแบบพับได้
         <br />
         ด้วยเรขาคณิตรูปหลายเหลี่ยมปกติและฟังก์ชันตรีโกณมิติ
       </p>
       <p className={styles.engTitle}>
-        Mathematical Modeling of Foldable Lanna Lanterns from Pineapple Fiber Paper
+        Applying Mathematical Relationships to Model the Net Pattern of Foldable Lanna Lanterns
         <br />
         Using Regular Polygon Geometry and Trigonometric Functions
       </p>
