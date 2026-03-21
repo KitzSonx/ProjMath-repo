@@ -3,36 +3,7 @@
 import { useRef, useEffect, useState } from 'react'
 import LanternViewer3D from './LanternViewer3D'
 import jsPDF from 'jspdf'
-import type { PatternInputs } from '@/types/lantern' // 👈 นำเข้า Type ของตัวแม่
-
-// ─────────────────────────────────────────────────────────────────────────────
-// คำนวณ kite_width จากสูตรเดียวกับ 3D code
-// ─────────────────────────────────────────────────────────────────────────────
-function computeKiteWidth(theta: number, inputs: PatternInputs): number {
-  const { a, hb, ht, n } = inputs
-  const baseAngleDeg = (180 - theta) / 2
-  const baseThetaRad = (baseAngleDeg * Math.PI) / 180
-
-  const Ht_total = hb + inputs.hm + ht
-  const sc = 14 / (Ht_total || 1) 
-
-  const A    = a  * sc
-  const H_b  = hb * sc
-  const H_t  = ht * sc
-
-  const max_fold = Math.min(H_t, H_b)
-  const delta_R  = max_fold * Math.cos(baseThetaRad)
-
-  const numPairs   = Math.max(1, Math.round(n / 2))
-  const sliceAngle = (2 * Math.PI) / numPairs
-
-  const R_end      = A / (2 * Math.sin(sliceAngle / 2))
-  const R_mid      = R_end + delta_R
-  const delta_blue = 2 * Math.asin(Math.min(1, A / (2 * R_mid)))
-  const gap_angle  = sliceAngle - delta_blue
-
-  return (2 * R_mid * Math.sin(gap_angle / 2)) / sc
-}
+import type { PatternInputs } from '@/types/lantern'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ฟังก์ชันกลางสำหรับวาด Pattern (ใช้ร่วมกันทั้งจอมอนิเตอร์ และ PDF)
@@ -42,13 +13,12 @@ function renderPatternShapes(
   tx: (x: number) => number,
   ty: (y: number) => number,
   inputs: PatternInputs,
-  theta: number,
   lwScale: number = 1
 ) {
-  const { a, hb, hm, ht, hspike, n, ltail } = inputs
+  const { a, b, hb, hm, ht, hspike, n, ltail } = inputs // 👈 ดึง b มาใช้ตรงๆ
   const q        = Math.round(n / 2)
   const Ht       = hb + hm + ht          
-  const kiteW    = computeKiteWidth(theta, inputs)  
+  const kiteW    = b                    // 👈 ใช้ค่ากว้างว่าว (b) จาก Slider แทนการคำนวณ
   const halfKite = kiteW / 2              
   const h_spike  = hspike
   const l_tail   = ltail
@@ -158,7 +128,6 @@ function renderPatternShapes(
   }
 }
 
-// 👈 1. สร้าง Props สำหรับรับค่าจากหน้า page.tsx
 interface Props {
   inputs: PatternInputs;
   onChange: (newInputs: PatternInputs) => void;
@@ -167,12 +136,9 @@ interface Props {
 export default function PatternCanvas({ inputs, onChange }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   
-  // 👈 2. ลบ useState ของ inputs ออกไป เพราะเราจะใช้จาก Props แทน
-  const [theta, setTheta]   = useState<number>(45)
   const [paperSize, setPaperSize] = useState<string>('a4')
   const [unit, setUnit] = useState<string>('cm')
 
-  // 👈 3. อัปเดต handleChange ให้ส่งค่ากลับขึ้นไปที่ Parent (page.tsx)
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     onChange({ ...inputs, [e.target.name]: parseFloat(e.target.value) })
   }
@@ -192,16 +158,15 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, W, Hc)
 
-    const { a, hb, hm, ht, hspike, n, ltail } = inputs
+    const { a, b, hb, hm, ht, hspike, n, ltail } = inputs // 👈 ดึง b มาใช้
     const q        = Math.round(n / 2)
     const Ht       = hb + hm + ht          
-    const kiteW    = computeKiteWidth(theta, inputs)  
+    const kiteW    = b  // 👈 ใช้ค่า b
     const h_spike  = hspike              
     const l_tail   = ltail
     const l_tail_tip = l_tail * 0.15
     const cellW  = a + kiteW
     
-    // คำนวณ Bounding Box ในสเกลสมมุติ เพื่อหาขอบเขตที่แท้จริงบนหน้าจอ
     const minX = 0
     const maxX = cellW * q
     const minY = -(l_tail + l_tail_tip) 
@@ -219,8 +184,8 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
     const tx = (x: number) => ox + x * sc
     const ty = (y: number) => oy - y * sc  
 
-    // เรียกใช้วาดกราฟิกบนหน้าจอ
-    renderPatternShapes(ctx, tx, ty, inputs, theta, 1)
+    // เรียกใช้วาดกราฟิกบนหน้าจอ (ไม่ต้องส่ง theta แล้ว)
+    renderPatternShapes(ctx, tx, ty, inputs, 1)
 
     // ── Legend ──
     ctx.font = `11px 'Noto Sans Thai', sans-serif`
@@ -257,10 +222,10 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
   }
 
   async function handleDownloadPDF() {
-    const { a, hb, hm, ht, hspike, n, ltail } = inputs
+    const { a, b, hb, hm, ht, hspike, n, ltail } = inputs // 👈 ดึง b มาใช้
     const q = Math.round(n / 2)
     const Ht = hb + hm + ht
-    const kiteW = computeKiteWidth(theta, inputs)
+    const kiteW = b // 👈 ใช้ค่า b
     const l_tail_tip = ltail * 0.15
     const cellW = a + kiteW
 
@@ -291,7 +256,7 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
     const ty = (y: number) => (maxY - y) * sc 
 
     const lwScale = pxPerMm * 0.15 
-    renderPatternShapes(offCtx, tx, ty, inputs, theta, lwScale)
+    renderPatternShapes(offCtx, tx, ty, inputs, lwScale)
 
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: paperSize })
     const pdfW = pdf.internal.pageSize.getWidth()
@@ -351,12 +316,13 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
     pdf.save(fileName)
   }
 
-  useEffect(() => { drawPattern() }, [inputs, theta, paperSize])
+  // 👈 ลบ dependency theta ออกจาก useEffect
+  useEffect(() => { drawPattern() }, [inputs, paperSize])
   useEffect(() => {
     const r = () => drawPattern()
     window.addEventListener('resize', r)
     return () => window.removeEventListener('resize', r)
-  }, [inputs, theta])
+  }, [inputs])
 
   return (
     <section id="pattern">
@@ -387,7 +353,6 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
             <div key={f.name}>
               <label style={{ display:'flex', justifyContent:'space-between', fontSize:'0.8rem', marginBottom:2 }}>
                 <span>{f.label}</span>
-                {/* 👈 แก้ Type Cast เล็กน้อยเพื่อให้ TypeScript รู้จัก Key */}
                 <strong>{inputs[f.name as keyof PatternInputs]}</strong>
               </label>
               <input type="range" name={f.name}
@@ -398,17 +363,8 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
             </div>
           ))}
         </div>
-
-        <div style={{ paddingTop:12, borderTop:'2px solid #cbd5e1' }}>
-          <label style={{ display:'flex', justifyContent:'space-between', fontSize:'0.9rem',
-                          marginBottom:6, color:'#0369a1', fontWeight:'bold' }}>
-            <span>ระดับการกาง (Theta)</span>
-            <span>{theta}°</span>
-          </label>
-          <input type="range" min={0} max={180} value={theta}
-            onChange={e => setTheta(parseFloat(e.target.value))}
-            style={{ width:'100%', cursor:'pointer', accentColor:'#0ea5e9' }} />
-        </div>
+        
+        {/* 👈 ลบส่วนปรับ Slider มุมกาง Theta ออกจากตรงนี้แล้ว */}
       </div>
 
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(320px,1fr))', gap:20 }}>
@@ -450,9 +406,10 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
         </div>
 
         <div>
-          <h3 style={{ fontSize:'1rem', marginBottom:8 }}>🏮 พรีวิว 3D</h3>
+          <h3 style={{ fontSize:'1rem', marginBottom:8 }}>🏮 พรีวิว 3D (มุมกาง 90 องศา)</h3>
+          {/* 👈 ล็อค theta ไว้ที่ 90 ตายตัว */}
           <LanternViewer3D
-            theta={theta} a={inputs.a} b={inputs.b}
+            theta={90} a={inputs.a} b={inputs.b}
             hb={inputs.hb} hm={inputs.hm} ht={inputs.ht}
             hspike={inputs.hspike} 
             n={inputs.n} ltail={inputs.ltail} />
