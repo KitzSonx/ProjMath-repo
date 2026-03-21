@@ -7,7 +7,7 @@ export default function DesmosSection() {
       <h3>กราฟ VRR(θ) = 1 − sin³θ</h3>
       <iframe
         className="desmos-frame"
-        src="https://www.desmos.com/calculator/0xaakfo5zc?lang=th"
+        src="https://www.desmos.com/calculator/xzopvhc1yp"
         frameBorder={0}
         allowFullScreen
       />
@@ -16,7 +16,7 @@ export default function DesmosSection() {
       <p>
         สามารถเปิดกราฟเต็มจอได้ที่{' '}
         <a
-          href="https://www.desmos.com/calculator/0xaakfo5zc?lang=th"
+          href="https://www.desmos.com/calculator/xzopvhc1yp"
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: 'var(--maroon)', fontWeight: 600 }}

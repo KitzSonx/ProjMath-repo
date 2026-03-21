@@ -2,8 +2,9 @@
 
 import dynamic from 'next/dynamic'
 import styles from './FoldSimulator.module.css'
-import type { PatternInputs } from '@/types/lantern' // 👈 Import type เข้ามา
+import type { PatternInputs } from '@/types/lantern'
 
+// โหลด 3D Viewer แบบ Dynamic เพื่อป้องกันปัญหา Window is not defined บน SSR
 const LanternViewer3D = dynamic(() => import('./LanternViewer3D'), {
   ssr: false,
   loading: () => (
@@ -25,7 +26,7 @@ interface Props {
   sinT: number
   vTheta: number
   vrr: number
-  patternInputs: PatternInputs // 👈 เพิ่มการรับค่าขนาดโคมจากหน้าหลัก
+  patternInputs: PatternInputs 
 }
 
 const TABLE_ROWS = [
@@ -50,8 +51,8 @@ export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, vThet
         </label>
         <input
           type="range"
-          min={5}
-          max={90}
+          min={0}
+          max={180}
           value={theta}
           onChange={(e) => onThetaChange(parseInt(e.target.value))}
           className={styles.slider}
@@ -67,6 +68,8 @@ export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, vThet
         hb={patternInputs.hb}
         hm={patternInputs.hm}
         ht={patternInputs.ht}
+        hspike={patternInputs.hspike} // เพิ่มค่า hspike
+        ltail={patternInputs.ltail}   // เพิ่มค่า ltail
       />
 
       <div className={styles.gaugeContainer} style={{ marginTop: 20 }}>

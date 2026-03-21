@@ -22,6 +22,8 @@ export interface PatternInputs {
   hm: number
   ht: number
   n: number
+  hspike: number;
+  ltail: number;
 }
 
 export interface AreaResult {
