@@ -11,6 +11,7 @@ interface Props {
   hb?: number
   hm?: number
   ht?: number
+  hspike?: number // 1. เพิ่ม hspike ใน Props
   ltail?: number 
 }
 
@@ -47,7 +48,8 @@ function addLine(group: THREE.Group, pts: THREE.Vector3[], mat: THREE.Material) 
 }
 
 export default function LanternViewer3D({
-  theta, n = 8, a = 6.5, b = 7, hb = 6.5, hm = 8.5, ht = 6.5, ltail = 30
+  // 2. รับค่า hspike เข้ามา (ตั้งค่าเริ่มต้นให้ตรงกับ 2D)
+  theta, n = 8, a = 6.5, b = 7, hb = 6.5, hm = 8.5, ht = 6.5, hspike = 3.25, ltail = 30
 }: Props) {
   const mountRef = useRef<HTMLDivElement>(null)
   const engineRef = useRef<{
@@ -206,15 +208,12 @@ export default function LanternViewer3D({
       if (child.geometry) child.geometry.dispose()
     }
 
-    // 🎯 แปลงค่าจาก มุมยอด (Apex) เป็น มุมฐาน (Base Angle) ที่แกน Y
-    // มุมยอด 0° -> มุมฐาน 90° | มุมยอด 90° -> มุมฐาน 45° | มุมยอด 180° -> มุมฐาน 0°
     const baseAngleDeg = (180 - theta) / 2
     const baseThetaRad = (baseAngleDeg * Math.PI) / 180
     
-    // ปรับความสว่างวัสดุตามการกาง
     const baseEmissive = 0.4
     const emissiveRange = 0.4
-    const sinT = Math.sin(baseThetaRad) // ใช้ baseThetaRad ในการสะท้อนแสง
+    const sinT = Math.sin(baseThetaRad) 
     materials.paperPaleRed.emissiveIntensity = baseEmissive + emissiveRange * sinT
     materials.paperPaleBlue.emissiveIntensity = baseEmissive + emissiveRange * sinT
 
@@ -226,12 +225,9 @@ export default function LanternViewer3D({
     const H_m = hm * sc
     const H_t = ht * sc
 
-    // 🎯 แก้บัคโครงสร้างเบี้ยว: 
-    // ใช้ความยาวของด้านที่ "สั้นที่สุด" ระหว่างช่วงบนและล่าง เป็นข้อจำกัดการกาง (delta_R)
     const max_fold = Math.min(H_t, H_b)
     const delta_R = max_fold * Math.cos(baseThetaRad) 
 
-    // พีทาโกรัสหาความสูงในแกน Y ของทั้งส่วนบนและล่าง
     const Y_t = Math.sqrt(Math.max(0.001, H_t * H_t - delta_R * delta_R))
     const Y_b = Math.sqrt(Math.max(0.001, H_b * H_b - delta_R * delta_R))
     const Y_m = H_m 
@@ -285,8 +281,8 @@ export default function LanternViewer3D({
       addQuad(lanternGroup, [b_m1_R, b_next_m1_L, b_next_m2_L, b_m2_R], materials.paperPaleRed)
       addTri(lanternGroup, b_m2_R, b_next_m2_L, b_top_R, materials.paperPaleRed)
 
-      const h_spike_ref = 9 
-      const H_spike = h_spike_ref * sc 
+      // 3. ใช้ค่า hspike เพื่อกำหนดความสูงของยอด 3D
+      const H_spike = hspike * sc 
       const R_spike_tip = R_end * 0.6 
       const spikeTip = new THREE.Vector3(R_spike_tip * Math.cos(ang_base), y_top + H_spike, R_spike_tip * Math.sin(ang_base))
       addTri(lanternGroup, b_top_L, spikeTip, b_top_R, materials.paperPaleBlue)
@@ -329,7 +325,8 @@ export default function LanternViewer3D({
     candleLight.userData.baseIntensity = 8.0 
     candleLight.distance = 25
 
-  }, [theta, n, a, b, hb, hm, ht, ltail]) 
+  // 4. เพิ่ม hspike เข้าไปใน Dependency Array เพื่อให้ 3D อัปเดตเมื่อค่าเปลี่ยน
+  }, [theta, n, a, b, hb, hm, ht, hspike, ltail]) 
 
   return (
     <div style={{ position: 'relative', marginTop: 16 }}>
