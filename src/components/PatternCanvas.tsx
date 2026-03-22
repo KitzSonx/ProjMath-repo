@@ -15,10 +15,10 @@ function renderPatternShapes(
   inputs: PatternInputs,
   lwScale: number = 1
 ) {
-  const { a, b, hb, hm, ht, hspike, n, ltail } = inputs // 👈 ดึง b มาใช้ตรงๆ
+  const { a, b, hb, hm, ht, hspike, n, ltail } = inputs
   const q        = Math.round(n / 2)
   const Ht       = hb + hm + ht          
-  const kiteW    = b                    // 👈 ใช้ค่ากว้างว่าว (b) จาก Slider แทนการคำนวณ
+  const kiteW    = b
   const halfKite = kiteW / 2              
   const h_spike  = hspike
   const l_tail   = ltail
@@ -139,8 +139,15 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
   const [paperSize, setPaperSize] = useState<string>('a4')
   const [unit, setUnit] = useState<string>('cm')
 
+  // 👈 แก้ไขฟังก์ชัน handleChange เพื่อบังคับให้ a และ b มีค่าเท่ากันเสมอ
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    onChange({ ...inputs, [e.target.name]: parseFloat(e.target.value) })
+    const val = parseFloat(e.target.value)
+    
+    if (e.target.name === 'a' || e.target.name === 'b') {
+      onChange({ ...inputs, a: val, b: val })
+    } else {
+      onChange({ ...inputs, [e.target.name]: val })
+    }
   }
 
   function drawPattern() {
@@ -158,10 +165,10 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, W, Hc)
 
-    const { a, b, hb, hm, ht, hspike, n, ltail } = inputs // 👈 ดึง b มาใช้
+    const { a, b, hb, hm, ht, hspike, n, ltail } = inputs
     const q        = Math.round(n / 2)
     const Ht       = hb + hm + ht          
-    const kiteW    = b  // 👈 ใช้ค่า b
+    const kiteW    = b  
     const h_spike  = hspike              
     const l_tail   = ltail
     const l_tail_tip = l_tail * 0.15
@@ -184,7 +191,6 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
     const tx = (x: number) => ox + x * sc
     const ty = (y: number) => oy - y * sc  
 
-    // เรียกใช้วาดกราฟิกบนหน้าจอ (ไม่ต้องส่ง theta แล้ว)
     renderPatternShapes(ctx, tx, ty, inputs, 1)
 
     // ── Legend ──
@@ -222,10 +228,10 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
   }
 
   async function handleDownloadPDF() {
-    const { a, b, hb, hm, ht, hspike, n, ltail } = inputs // 👈 ดึง b มาใช้
+    const { a, b, hb, hm, ht, hspike, n, ltail } = inputs
     const q = Math.round(n / 2)
     const Ht = hb + hm + ht
-    const kiteW = b // 👈 ใช้ค่า b
+    const kiteW = b 
     const l_tail_tip = ltail * 0.15
     const cellW = a + kiteW
 
@@ -316,7 +322,6 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
     pdf.save(fileName)
   }
 
-  // 👈 ลบ dependency theta ออกจาก useEffect
   useEffect(() => { drawPattern() }, [inputs, paperSize])
   useEffect(() => {
     const r = () => drawPattern()
@@ -363,8 +368,6 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
             </div>
           ))}
         </div>
-        
-        {/* 👈 ลบส่วนปรับ Slider มุมกาง Theta ออกจากตรงนี้แล้ว */}
       </div>
 
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(320px,1fr))', gap:20 }}>
@@ -407,7 +410,6 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
 
         <div>
           <h3 style={{ fontSize:'1rem', marginBottom:8 }}>🏮 พรีวิว 3D (มุมกาง 90 องศา)</h3>
-          {/* 👈 ล็อค theta ไว้ที่ 90 ตายตัว */}
           <LanternViewer3D
             theta={90} a={inputs.a} b={inputs.b}
             hb={inputs.hb} hm={inputs.hm} ht={inputs.ht}
