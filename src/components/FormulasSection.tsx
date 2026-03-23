@@ -4,7 +4,7 @@ import React from 'react'
 import 'katex/dist/katex.min.css'
 import { BlockMath } from 'react-katex'
 
-// สตริง LaTeX ต้องใช้ \\ (เบิ้ล backslash) เพื่อไม่ให้ JavaScript มองว่าเป็น Escape Character
+
 const formulas = [
   { 
     title: '4.1 ความสูงรวมของโคมล้านนา', 
@@ -48,7 +48,6 @@ export default function FormulasSection() {
               {item.title}
             </h3>
             
-            {/* 👈 ใช้ BlockMath เพื่อเรนเดอร์สมการให้อยู่กึ่งกลางและมีขนาดใหญ่แบบสมการหลัก */}
             <div style={{ overflowX: 'auto', padding: '8px 0' }}>
               <BlockMath math={item.latex} />
             </div>

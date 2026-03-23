@@ -16,7 +16,6 @@ import DesmosSection   from '@/components/DesmosSection'
 import Footer          from '@/components/Footer'
 import PatternControls from '@/components/PatternControls'
 
-// 1. 👈 เพิ่ม hspike และ ltail ในค่าเริ่มต้น (Default) เพื่อไม่ให้เกิด Error ตอนโหลดครั้งแรก
 const DEFAULT_PATTERN: PatternInputs = { 
   a: 6.5, b: 7, hb: 6.5, hm: 8.5, ht: 6.5, n: 8,
   hspike: 3.25, ltail: 30 
@@ -37,7 +36,6 @@ export default function Home() {
 
         <VolumeCalculator onVolumeCalculated={updateVOpen} />
 
-        {/* 2. 👈 จ่าย patternInputs และ setPatternInputs เข้าไปให้ PatternCanvas (หรือ PatternControls ขึ้นอยู่กับว่าคุณเอาฟอร์มกรอกตัวเลขไว้ที่ไหน) */}
         <PatternCanvas 
           inputs={patternInputs} 
           onChange={setPatternInputs} 

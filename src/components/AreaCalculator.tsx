@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import type { PatternInputs, AreaResult } from '@/types/lantern'
 
-// รับ patternInputs มาจาก page.tsx เพราะใช้ค่าเดียวกับ PatternCanvas
+
 interface Props {
   patternInputs: PatternInputs
 }
@@ -29,7 +29,7 @@ export default function AreaCalculator({ patternInputs }: Props) {
   return (
     <section id="calc-area">
       <h2><span className="icon">📄</span>คำนวณพื้นที่กระดาษ</h2>
-      <p>คำนวณพื้นที่กระดาษใยสับปะรดที่ต้องใช้ต่อ 1 โคม (ใช้ค่าจากรูปคลี่ด้านบน)</p>
+      <p>คำนวณพื้นที่กระดาษที่ต้องใช้ต่อ 1 โคม (ใช้ค่าจากรูปคลี่ด้านบน)</p>
 
       <button className="btn btn-gold" onClick={calcArea}>คำนวณพื้นที่ A_net</button>
 

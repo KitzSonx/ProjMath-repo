@@ -6,12 +6,11 @@ export default function Footer() {
 
   return (
     <footer className={styles.footer}>
-      <p>🏮 โครงงานคณิตศาสตร์ — โคมล้านนาพับเก็บได้จากกระดาษใยสับปะรด</p>
+      <p>🏮 โครงงานคณิตศาสตร์ — โคมล้านนาพับเก็บได้</p>
       <p>
         สร้างด้วย <span className={styles.heart}>♥</span> จากเชียงราย
       </p>
 
-      {/* 👇 ส่วนตัวนับจำนวนผู้เข้าชม (Visitor Counter) 👇 */}
       <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'center' }}>
         <img 
           // เปลี่ยนสีได้ตรง labelColor (สีพื้นหลังตัวอักษร) และ countColor (สีพื้นหลังตัวเลข)

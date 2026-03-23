@@ -6,6 +6,69 @@ import jsPDF from 'jspdf'
 import type { PatternInputs } from '@/types/lantern'
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 🌟 ฟังก์ชันช่วยคำนวณและวาดรูปภาพแบบรักษาสเกล (Utilities) 🌟
+// ─────────────────────────────────────────────────────────────────────────────
+
+// 1. คำนวณพารามิเตอร์สำหรับวาด Aspect Fit
+function getAspectFitParams(
+  img: HTMLImageElement,
+  targetRect: { x: number; y: number; width: number; height: number },
+  paddingPercent: number = 0.1 // ระยะห่างจากขอบ (10%)
+) {
+  const { width: tW, height: tH, x: tX, y: tY } = targetRect;
+
+  // 1. คำนวณพื้นที่ที่วาดได้จริงหลังหัก Padding
+  const padW = tW * paddingPercent;
+  const padH = tH * paddingPercent;
+  const availW = tW - 2 * padW;
+  const availH = tH - 2 * padH;
+
+  if (availW <= 0 || availH <= 0) return null;
+
+  // 2. คำนวณสเกลโดยเลือกด้านที่สั้นที่สุดของพื้นที่เป้าหมายเป็นเกณฑ์
+  // เพื่อให้รูปไม่ยืดและพอดีภายใน
+  const imgRatio = img.width / img.height;
+  const availRatio = availW / availH;
+
+  let drawW, drawH;
+  if (availRatio > imgRatio) {
+    // พื้นที่เป้าหมายกว้างกว่ารูป -> ฟิตตามความสูง
+    drawH = availH;
+    drawW = drawH * imgRatio;
+  } else {
+    // พื้นที่เป้าหมายสูงกว่ารูป -> ฟิตตามความกว้าง
+    drawW = availW;
+    drawH = drawW / imgRatio;
+  }
+
+  // 3. คำนวณตำแหน่ง x, y ให้อยู่ตรงกลางของ targetRect
+  const finalX = tX + padW + (availW - drawW) / 2;
+  const finalY = tY + padH + (availH - drawH) / 2;
+
+  return { x: finalX, y: finalY, width: drawW, height: drawH };
+}
+
+// 2. วาดรูปภาพแบบ Aspect Fit ลงบน Context
+function drawAspectFitImage(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  img: HTMLImageElement | null,
+  targetRect: { x: number; y: number; width: number; height: number },
+  paddingPercent: number = 0.1,
+  globalAlpha: number = 0.8
+) {
+  if (!img || !img.complete || img.width === 0) return;
+
+  const params = getAspectFitParams(img, targetRect, paddingPercent);
+  if (!params) return;
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'multiply'; 
+  ctx.globalAlpha = globalAlpha;
+  ctx.drawImage(img, params.x, params.y, params.width, params.height);
+  ctx.restore();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ฟังก์ชันกลางสำหรับวาด Pattern (ใช้ร่วมกันทั้งจอมอนิเตอร์ และ PDF)
 // ─────────────────────────────────────────────────────────────────────────────
 function renderPatternShapes(
@@ -13,7 +76,8 @@ function renderPatternShapes(
   tx: (x: number) => number,
   ty: (y: number) => number,
   inputs: PatternInputs,
-  lwScale: number = 1
+  lwScale: number = 1,
+  patternImg: HTMLImageElement | null = null
 ) {
   const { a, b, hb, hm, ht, hspike, n, ltail } = inputs
   const q        = Math.round(n / 2)
@@ -24,6 +88,17 @@ function renderPatternShapes(
   const l_tail   = ltail
   const l_tail_tip = l_tail * 0.15
   const cellW  = a + kiteW
+
+  // [ปรับแก้สเกล Papercraft]
+  // คำนวณความยาวขอบเฉียงจริง (True Length) ตามทฤษฎีบทพีทาโกรัส
+  const true_Lb = Math.sqrt(Math.pow(halfKite, 2) + Math.pow(hb, 2));
+  const true_Lt = Math.sqrt(Math.pow(halfKite, 2) + Math.pow(ht, 2));
+
+  // ปรับพิกัด Y ของแผงสีน้ำเงินให้ยืดออก เพื่อให้ขอบแนวตั้งยาวเท่ากับขอบเฉียงของสีแดง
+  const blue_y0 = hb - true_Lb;        // จุดล่างสุดของตัวโคมสีน้ำเงิน
+  const blue_y1 = hb;                  // รอยพับล่าง
+  const blue_y2 = hb + hm;             // รอยพับบน
+  const blue_y3 = hb + hm + true_Lt;   // จุดบนสุดของตัวโคมสีน้ำเงิน
 
   function drawGlueTab(x1: number, y1: number, x2: number, y2: number, outward = 1) {
     const dx = x2 - x1, dy = y2 - y1
@@ -77,34 +152,96 @@ function renderPatternShapes(
     const kCx  = xR + halfKite   
     const kR   = xR + kiteW      
 
-    // 1. แผงน้ำเงิน
+    // ─────────────────────────────────────────────────────────────────────────
+    // 1. วาดแผงน้ำเงิน
+    // ─────────────────────────────────────────────────────────────────────────
     ctx.strokeStyle = '#2563EB'
     ctx.fillStyle   = 'rgba(37,99,235,0.07)'
     ctx.lineWidth   = 1 * lwScale
     ctx.beginPath()
-    ctx.moveTo(tx(xL), ty(0))
-    ctx.lineTo(tx(xL), ty(-l_tail))
-    ctx.lineTo(tx(xL + a/2), ty(-(l_tail + l_tail_tip)))   
-    ctx.lineTo(tx(xR), ty(-l_tail))
-    ctx.lineTo(tx(xR), ty(0))
-    ctx.lineTo(tx(xR), ty(Ht))
-    ctx.lineTo(tx(xL + a/2), ty(Ht + h_spike))             
-    ctx.lineTo(tx(xL), ty(Ht))
+    ctx.moveTo(tx(xL), ty(blue_y0))
+    ctx.lineTo(tx(xL), ty(blue_y0 - l_tail))
+    ctx.lineTo(tx(xL + a/2), ty(blue_y0 - (l_tail + l_tail_tip)))   
+    ctx.lineTo(tx(xR), ty(blue_y0 - l_tail))
+    ctx.lineTo(tx(xR), ty(blue_y0))
+    ctx.lineTo(tx(xR), ty(blue_y3))
+    ctx.lineTo(tx(xL + a/2), ty(blue_y3 + h_spike))            
+    ctx.lineTo(tx(xL), ty(blue_y3))
     ctx.closePath()
     ctx.fill()
     ctx.stroke()
+
+    // 🌟 1.1 วาดรูปภาพบนแผงสีน้ำเงิน
+    if (patternImg) {
+      ctx.save();
+      // Clip: ป้องกันลายล้นขอบเฉียงของแผงน้ำเงิน
+      ctx.beginPath()
+      ctx.moveTo(tx(xL), ty(blue_y0))
+      ctx.lineTo(tx(xR), ty(blue_y0))
+      ctx.lineTo(tx(xR), ty(blue_y3))
+      ctx.lineTo(tx(xL), ty(blue_y3))
+      ctx.closePath()
+      ctx.clip(); 
+
+      // -- แบ่ง 5 ส่วนและวาด --
+      // กว้างของแผง (หน่วยอินพุต)
+      const bW = a;
+      // พิกัด X, Y ด้านซ้ายล่างของสี่เหลี่ยมเป้าหมาย (หน่วยอินพุต)
+      const bX = xL;
+
+      // ก. ส่วนบน (ระหว่าง blue_y2 ถึง blue_y3)
+      const topRectInput = {
+        x: bX,
+        y: blue_y2, 
+        width: bW,
+        height: blue_y3 - blue_y2
+      };
+      // แปลงเป็นพิกัดหน้าจอ (Canvas Coordinates)
+      const topRectScreen = {
+        x: tx(topRectInput.x),
+        y: ty(topRectInput.y + topRectInput.height), // ty() กลับด้าน Y
+        width: topRectInput.width * (tx(cellW)-tx(0))/cellW, // คำนวณความกว้างหน้าจอจริง
+        height: (ty(topRectInput.y) - ty(topRectInput.y + topRectInput.height))
+      };
+      // แก้ไขการคำนวณความกว้างหน้าจอให้ถูกต้องตามสเกล sc
+      // เราใช้ tx(xR) - tx(xL) จะแม่นยำกว่า
+      topRectScreen.width = tx(xR) - tx(xL);
+
+      drawAspectFitImage(ctx, patternImg, topRectScreen, 0.1, 0.8);
+
+      // ข. ส่วนล่าง (ระหว่าง blue_y0 ถึง blue_y1)
+      const botRectInput = {
+        x: bX,
+        y: blue_y0,
+        width: bW,
+        height: blue_y1 - blue_y0
+      };
+      const botRectScreen = {
+        x: tx(botRectInput.x),
+        y: ty(botRectInput.y + botRectInput.height),
+        width: tx(xR) - tx(xL),
+        height: (ty(botRectInput.y) - ty(botRectInput.y + botRectInput.height))
+      };
+      drawAspectFitImage(ctx, patternImg, botRectScreen, 0.1, 0.8);
+      
+      ctx.restore();
+    }
 
     // 2. เส้นพับแนวนอน
     ctx.strokeStyle = '#16A34A'
     ctx.lineWidth   = 0.8 * lwScale
     ctx.setLineDash([4 * lwScale, 3 * lwScale])
     ctx.beginPath()
-    ctx.moveTo(tx(xL), ty(hb));       ctx.lineTo(tx(xR), ty(hb))
-    ctx.moveTo(tx(xL), ty(hb + hm)); ctx.lineTo(tx(xR), ty(hb + hm))
+    ctx.moveTo(tx(xL), ty(blue_y0)); ctx.lineTo(tx(xR), ty(blue_y0)) // พับฐานล่างสุด
+    ctx.moveTo(tx(xL), ty(blue_y1)); ctx.lineTo(tx(xR), ty(blue_y1)) // พับช่วงล่าง
+    ctx.moveTo(tx(xL), ty(blue_y2)); ctx.lineTo(tx(xR), ty(blue_y2)) // พับช่วงบน
+    ctx.moveTo(tx(xL), ty(blue_y3)); ctx.lineTo(tx(xR), ty(blue_y3)) // พับยอดบนสุด
     ctx.stroke()
     ctx.setLineDash([])
 
-    // 3. แผงแดง (ว่าว)
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3. วาดแผงแดง (ว่าว)
+    // ─────────────────────────────────────────────────────────────────────────
     ctx.strokeStyle = '#DC2626'
     ctx.fillStyle   = 'rgba(220,38,38,0.07)'
     ctx.lineWidth   = 1 * lwScale
@@ -118,6 +255,39 @@ function renderPatternShapes(
     ctx.closePath()
     ctx.fill()
     ctx.stroke()
+
+    // 🌟 3.1 วาดรูปภาพบนแผงสีแดง (ส่วนกลาง)
+    if (patternImg) {
+      ctx.save();
+      // Clip: ป้องกันลายล้นขอบเฉียงรูปว่าว
+      ctx.beginPath()
+      ctx.moveTo(tx(kCx), ty(0))        
+      ctx.lineTo(tx(kL),  ty(hb))       
+      ctx.lineTo(tx(kL),  ty(hb + hm)) 
+      ctx.lineTo(tx(kCx), ty(Ht))       
+      ctx.lineTo(tx(kR),  ty(hb + hm)) 
+      ctx.lineTo(tx(kR),  ty(hb)) 
+      ctx.closePath();
+      ctx.clip();
+
+      // แบ่ง 3 ส่วน: ส่วนกลางคือสี่เหลี่ยม kL, kR ระหว่าง y=hb ถึง y=hb+hm
+      const kiteRectInput = {
+        x: kL,
+        y: hb,
+        width: kiteW,
+        height: hm
+      };
+      const kiteRectScreen = {
+        x: tx(kiteRectInput.x),
+        y: ty(kiteRectInput.y + kiteRectInput.height),
+        width: tx(kR) - tx(kL),
+        height: (ty(kiteRectInput.y) - ty(kiteRectInput.y + kiteRectInput.height))
+      };
+      // วาดรูปส่วนกลางแผงแดง
+      drawAspectFitImage(ctx, patternImg, kiteRectScreen, 0.1, 0.8);
+
+      ctx.restore();
+    }
 
     // 4. แถบกาว
     drawGlueTab(kCx, 0,      kL, hb,        1)  
@@ -138,8 +308,20 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
   
   const [paperSize, setPaperSize] = useState<string>('a4')
   const [unit, setUnit] = useState<string>('cm')
+  const [patternImg, setPatternImg] = useState<HTMLImageElement | null>(null)
 
-  // 👈 แก้ไขฟังก์ชัน handleChange เพื่อบังคับให้ a และ b มีค่าเท่ากันเสมอ
+  useEffect(() => {
+    const img = new Image()
+    img.src = '/thai-pattern.svg' // ตรวจสอบว่าไฟล์อยู่ใน public/thai-pattern.svg
+    img.onload = () => {
+      setPatternImg(img)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (patternImg) drawPattern()
+  }, [patternImg])
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = parseFloat(e.target.value)
     
@@ -167,17 +349,22 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
 
     const { a, b, hb, hm, ht, hspike, n, ltail } = inputs
     const q        = Math.round(n / 2)
-    const Ht       = hb + hm + ht          
     const kiteW    = b  
     const h_spike  = hspike              
     const l_tail   = ltail
     const l_tail_tip = l_tail * 0.15
     const cellW  = a + kiteW
     
+    // อัปเดตกรอบ Bounding Box ให้รองรับแผงสีน้ำเงินที่ยืดขึ้น/ลง
+    const true_Lb = Math.sqrt(Math.pow(b/2, 2) + Math.pow(hb, 2));
+    const true_Lt = Math.sqrt(Math.pow(b/2, 2) + Math.pow(ht, 2));
+    const blue_y0 = hb - true_Lb;
+    const blue_y3 = hb + hm + true_Lt;
+
     const minX = 0
     const maxX = cellW * q
-    const minY = -(l_tail + l_tail_tip) 
-    const maxY = Ht + h_spike          
+    const minY = blue_y0 - (l_tail + l_tail_tip) 
+    const maxY = blue_y3 + h_spike          
     const totalW = maxX - minX
     const totalH = maxY - minY
 
@@ -191,9 +378,9 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
     const tx = (x: number) => ox + x * sc
     const ty = (y: number) => oy - y * sc  
 
-    renderPatternShapes(ctx, tx, ty, inputs, 1)
+    renderPatternShapes(ctx, tx, ty, inputs, 1, patternImg)
 
-    // ── Legend ──
+    // Legend
     ctx.font = `11px 'Noto Sans Thai', sans-serif`
     ctx.textAlign = 'center'
     ctx.fillStyle = '#2563EB'; ctx.fillText('■ ชิ้นส่วนหลัก', W * 0.15, Hc - 8)
@@ -230,15 +417,19 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
   async function handleDownloadPDF() {
     const { a, b, hb, hm, ht, hspike, n, ltail } = inputs
     const q = Math.round(n / 2)
-    const Ht = hb + hm + ht
     const kiteW = b 
     const l_tail_tip = ltail * 0.15
     const cellW = a + kiteW
 
+    const true_Lb = Math.sqrt(Math.pow(b/2, 2) + Math.pow(hb, 2));
+    const true_Lt = Math.sqrt(Math.pow(b/2, 2) + Math.pow(ht, 2));
+    const blue_y0 = hb - true_Lb;
+    const blue_y3 = hb + hm + true_Lt;
+
     const minX = 0
     const maxX = cellW * q
-    const minY = -(ltail + l_tail_tip)
-    const maxY = Ht + hspike
+    const minY = blue_y0 - (ltail + l_tail_tip)
+    const maxY = blue_y3 + hspike
     
     const totalW_units = maxX - minX
     const totalH_units = maxY - minY
@@ -261,8 +452,8 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
     const tx = (x: number) => (x - minX) * sc
     const ty = (y: number) => (maxY - y) * sc 
 
-    const lwScale = pxPerMm * 0.15 
-    renderPatternShapes(offCtx, tx, ty, inputs, lwScale)
+    const lwScale = pxPerMm * 0.15
+    renderPatternShapes(offCtx, tx, ty, inputs, lwScale, patternImg)
 
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: paperSize })
     const pdfW = pdf.internal.pageSize.getWidth()
@@ -352,7 +543,7 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
             { name:'hm',     label:'สูงช่วงกลาง (h_m)',  min:0, max:50, step:0.1 },
             { name:'ht',     label:'สูงช่วงบน (h_t)',    min:0, max:50, step:0.1 },
             { name:'hspike', label:'ยอดแหลม (h_spike)', min:0, max:50, step:0.1 },
-            { name:'ltail',  label:'หาง (ltail)',         min:0, max:50, step:0.1 },
+            { name:'ltail',  label:'หาง (ltail)',        min:0, max:50, step:0.1 },
             { name:'n',      label:'จำนวนด้าน (n)',       min:6, max:16, step:2   },
           ].map(f => (
             <div key={f.name}>
@@ -411,7 +602,7 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
         <div>
           <h3 style={{ fontSize:'1rem', marginBottom:8 }}>🏮 พรีวิว 3D (มุมกาง 90 องศา)</h3>
           <LanternViewer3D
-            theta={90} a={inputs.a} b={inputs.b}
+            a={inputs.a} b={inputs.b}
             hb={inputs.hb} hm={inputs.hm} ht={inputs.ht}
             hspike={inputs.hspike} 
             n={inputs.n} ltail={inputs.ltail} />

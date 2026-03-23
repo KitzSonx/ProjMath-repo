@@ -61,7 +61,6 @@ export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, vThet
 
       {/* 👈 จ่ายค่า Props ทั้งหมดที่ได้จากแผงควบคุมเข้าไปให้ LanternViewer3D */}
       <LanternViewer3D 
-        theta={theta} 
         n={patternInputs.n} 
         a={patternInputs.a}
         b={patternInputs.b}
