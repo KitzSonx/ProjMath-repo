@@ -3,13 +3,11 @@ import styles from './Hero.module.css'
 export default function Hero() {
   return (
     <div className={styles.hero}>
-      <div className={styles.lanternIcon}>
-        <img 
-          src="/iconn.png"
+      <img 
+          src="/logo.png"
           alt="Lanna Lantern Icon"
           className={styles.lanternImg} 
         />
-      </div>
       <h1 className={styles.title}>โคมล้านนาพับเก็บได้</h1>
       <p className={styles.subtitle}>
         การประยุกต์ความสัมพันธ์ทางคณิตศาสตร์ในการสร้างแบบจำลองรูปคลี่โคมล้านนาแบบพับได้

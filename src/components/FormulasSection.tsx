@@ -7,23 +7,23 @@ import { BlockMath } from 'react-katex'
 
 const formulas = [
   { 
-    title: '4.1 ความสูงรวมของโคมล้านนา', 
+    title: 'ความสูงรวมของโคมล้านนา', 
     latex: 'H = \\sum_{i=0}^{m-1} h_i' 
   },
   { 
-    title: '4.2 สมการสำหรับรูป n เหลี่ยมปกติ', 
+    title: 'สมการสำหรับรูป n เหลี่ยมปกติ', 
     latex: 'R = \\frac{s}{2 \\sin\\left(\\frac{\\pi}{n}\\right)}' 
   },
   { 
-    title: '4.3 สมการพื้นที่หน้าตัดของรูป n เหลี่ยมปกติ', 
+    title: 'สมการพื้นที่หน้าตัดของรูป n เหลี่ยมปกติ', 
     latex: 'A(R) = KR^2 \\quad \\text{เมื่อ} \\quad K = \\frac{n}{2} \\sin\\left(\\frac{2\\pi}{n}\\right)' 
   },
   { 
-    title: '4.4 สูตรการหาปริมาตรโคมตอนกาง (ผลรวมปริมาตรทุกชั้น)', 
+    title: 'สูตรการหาปริมาตรโคมตอนกาง (ผลรวมปริมาตรทุกชั้น)', 
     latex: 'V_{\\text{open}} = \\sum_{i=0}^{m-1} \\frac{h_i}{3} \\left( A(R_i) + A(R_{i+1}) + \\sqrt{A(R_i)A(R_{i+1})} \\right)' 
   },
   { 
-    title: '2.1 พื้นที่รูปคลี่ทั้งหมด', 
+    title: 'พื้นที่รูปคลี่ทั้งหมด', 
     latex: 'A_{\\text{net}} = A_{\\text{rect}} + A_{\\text{kite}} + A_{\\text{top}} + A_{\\text{tail}} + A_{\\text{glue}}' 
   },
 ]
