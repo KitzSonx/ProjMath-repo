@@ -59,13 +59,24 @@
 }
 
 .lanternIcon {
-  font-size: 64px;
-  display: block;
+  display: flex;
+  justify-content: center;
   margin-bottom: 16px;
   position: relative;
   z-index: 1;
   animation: sway 3s ease-in-out infinite;
   filter: drop-shadow(0 0 16px rgba(232,48,74,0.7));
+}
+
+.lanternImg {
+  width: 100px;
+  height: auto;
+  object-fit: contain;
+}
+
+@keyframes sway {
+  0%, 100% { transform: rotate(-4deg) scale(1); }
+  50%       { transform: rotate(4deg)  scale(1.05); }
 }
 
 .subtitle {

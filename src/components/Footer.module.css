@@ -8,8 +8,23 @@
   border-top: 3px solid var(--gold);
 }
 
+.footerText {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.footerIcon {
+  width: 60px; 
+  height: auto;
+  filter: drop-shadow(0 0 5px rgba(232, 48, 74, 0.3));
+}
+
 .heart {
   color: var(--gold);
+  display: inline-block;
   animation: pulse 1.5s ease-in-out infinite;
 }
 

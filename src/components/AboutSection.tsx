@@ -1,7 +1,19 @@
 export default function AboutSection() {
   return (
     <section id="about">
-      <h2><span className="icon">🏮</span>เกี่ยวกับโครงงาน</h2>
+      <h2>
+        <img 
+          src="/iconn.png" 
+          alt="Lanna Lantern" 
+          style={{ 
+            width: '3em',      // ปรับขนาดให้ใหญ่กว่าตัวอักษรเล็กน้อย
+            height: 'auto', 
+            marginRight: '1px', // เว้นระยะห่างจากข้อความ
+            verticalAlign: 'middle' // จัดวางให้อยู่กึ่งกลางบรรทัดเดียวกับข้อความ
+          }} 
+        />
+        เกี่ยวกับโครงงาน
+      </h2>
       <p>
         โคมล้านนาเป็นงานหัตถกรรมที่สืบทอดมากว่า 700 ปี โครงงานนี้ประยุกต์ใช้คณิตศาสตร์
         ในการออกแบบโคมแปดเหลี่ยม (n=8) ให้พับเก็บได้

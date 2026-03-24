@@ -62,13 +62,13 @@ export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, vThet
       {/* 👈 จ่ายค่า Props ทั้งหมดที่ได้จากแผงควบคุมเข้าไปให้ LanternViewer3D */}
       <LanternViewer3D 
         n={patternInputs.n} 
-        a={patternInputs.a}
-        b={patternInputs.b}
+        a={Math.max(0.01, patternInputs.a * sinT)} 
+        b={Math.max(0.01, patternInputs.b * sinT)}
         hb={patternInputs.hb}
         hm={patternInputs.hm}
         ht={patternInputs.ht}
-        hspike={patternInputs.hspike} // เพิ่มค่า hspike
-        ltail={patternInputs.ltail}   // เพิ่มค่า ltail
+        hspike={patternInputs.hspike}
+        ltail={patternInputs.ltail}
       />
 
       <div className={styles.gaugeContainer} style={{ marginTop: 20 }}>
