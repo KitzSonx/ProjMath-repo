@@ -12,7 +12,7 @@ interface Props {
   hm?: number
   ht?: number
   hspike?: number
-  ltail?: number 
+  ltail?: number
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -22,8 +22,8 @@ function addQuad(group: THREE.Group, pts: THREE.Vector3[], mat: THREE.Material) 
   const [a, b, c, d] = pts
   const geo = new THREE.BufferGeometry()
   const verts = new Float32Array([
-    a.x, a.y, a.z,  b.x, b.y, b.z,  c.x, c.y, c.z,
-    a.x, a.y, a.z,  c.x, c.y, c.z,  d.x, d.y, d.z,
+    a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z,
+    a.x, a.y, a.z, c.x, c.y, c.z, d.x, d.y, d.z,
   ])
   geo.setAttribute('position', new THREE.BufferAttribute(verts, 3))
   geo.computeVertexNormals()
@@ -35,7 +35,7 @@ function addQuad(group: THREE.Group, pts: THREE.Vector3[], mat: THREE.Material) 
 function addTri(group: THREE.Group, a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3, mat: THREE.Material) {
   const geo = new THREE.BufferGeometry()
   const verts = new Float32Array([
-    a.x, a.y, a.z,  b.x, b.y, b.z,  c.x, c.y, c.z,
+    a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z,
   ])
   geo.setAttribute('position', new THREE.BufferAttribute(verts, 3))
   geo.computeVertexNormals()
@@ -94,13 +94,13 @@ function addDecalQuad(
 
   const geo = new THREE.BufferGeometry();
   const verts = new Float32Array([
-    bl.x, bl.y, bl.z,  br.x, br.y, br.z,  tr.x, tr.y, tr.z,
-    bl.x, bl.y, bl.z,  tr.x, tr.y, tr.z,  tl.x, tl.y, tl.z,
+    bl.x, bl.y, bl.z, br.x, br.y, br.z, tr.x, tr.y, tr.z,
+    bl.x, bl.y, bl.z, tr.x, tr.y, tr.z, tl.x, tl.y, tl.z,
   ]);
-  
+
   const uvArray = new Float32Array([
-    0, 0,  1, 0,  1, 1,
-    0, 0,  1, 1,  0, 1,
+    0, 0, 1, 0, 1, 1,
+    0, 0, 1, 1, 0, 1,
   ]);
 
   geo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
@@ -109,7 +109,7 @@ function addDecalQuad(
 
   const mesh = new THREE.Mesh(geo, mat);
   // 🌟 บังคับลำดับการวาดให้ลายอยู่บนสุดเสมอ
-  mesh.renderOrder = 10; 
+  mesh.renderOrder = 10;
   group.add(mesh);
 }
 
@@ -121,9 +121,9 @@ export default function LanternViewer3D({
   const [texLoaded, setTexLoaded] = useState(false)
 
   const engineRef = useRef<{
-    scene: THREE.Scene, 
-    lanternGroup: THREE.Group, 
-    candleLight: THREE.PointLight, 
+    scene: THREE.Scene,
+    lanternGroup: THREE.Group,
+    candleLight: THREE.PointLight,
     materials: any,
     patternTex?: THREE.Texture
   } | null>(null)
@@ -146,19 +146,19 @@ export default function LanternViewer3D({
     mount.appendChild(renderer.domElement)
 
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color(0xFFFFFF) 
+    scene.background = new THREE.Color(0xFFFFFF)
 
     const camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 300)
-    camera.position.set(0, 4, 45) 
+    camera.position.set(0, 4, 45)
     camera.lookAt(0, 0, 0)
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6)) 
-    const topLight = new THREE.DirectionalLight(0xffffff, 1.0) 
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6))
+    const topLight = new THREE.DirectionalLight(0xffffff, 1.0)
     topLight.position.set(5, 20, 10)
     topLight.castShadow = true
     scene.add(topLight)
 
-    const candleLight = new THREE.PointLight(0xffaa55, 0, 30) 
+    const candleLight = new THREE.PointLight(0xffaa55, 0, 30)
     scene.add(candleLight)
 
     const lanternGroup = new THREE.Group()
@@ -184,12 +184,12 @@ export default function LanternViewer3D({
       decalMat: new THREE.MeshStandardMaterial({
         map: patternTex,
         transparent: true,
-        opacity: 1.0, 
+        opacity: 1.0,
         alphaTest: 0.05,
         depthWrite: false,
         polygonOffset: true,
         polygonOffsetFactor: -1,
-        polygonOffsetUnits: -4, 
+        polygonOffsetUnits: -4,
         side: THREE.FrontSide,
       }),
       edge: new THREE.LineBasicMaterial({ color: 0xD4955A, linewidth: 2 }),
@@ -217,14 +217,14 @@ export default function LanternViewer3D({
 
     const onMove = (e: MouseEvent | TouchEvent) => {
       if ('touches' in e && e.touches.length === 2) {
-        e.preventDefault() 
+        e.preventDefault()
         const dx = e.touches[0].clientX - e.touches[1].clientX
         const dy = e.touches[0].clientY - e.touches[1].clientY
         const distance = Math.hypot(dx, dy)
         if (initialPinchDistance > 0) {
           const delta = initialPinchDistance - distance
-          camera.position.z += delta * 0.15 
-          camera.position.z = Math.max(15, Math.min(100, camera.position.z)) 
+          camera.position.z += delta * 0.15
+          camera.position.z = Math.max(15, Math.min(100, camera.position.z))
         }
         initialPinchDistance = distance
         return
@@ -233,15 +233,15 @@ export default function LanternViewer3D({
       const pt = 'touches' in e ? e.touches[0] : (e as MouseEvent)
       rotY += (pt.clientX - prevX) * 0.008
       rotX += (pt.clientY - prevY) * 0.005
-      rotX = Math.max(-0.4, Math.min(0.6, rotX)) 
+      rotX = Math.max(-0.4, Math.min(0.6, rotX))
       prevX = pt.clientX; prevY = pt.clientY
     }
 
     const onUp = () => { isDragging = false; initialPinchDistance = -1 }
     const onWheel = (e: WheelEvent) => {
-      e.preventDefault() 
-      camera.position.z += e.deltaY * 0.05 
-      camera.position.z = Math.max(15, Math.min(100, camera.position.z)) 
+      e.preventDefault()
+      camera.position.z += e.deltaY * 0.05
+      camera.position.z = Math.max(15, Math.min(100, camera.position.z))
     }
 
     const dom = renderer.domElement
@@ -291,32 +291,32 @@ export default function LanternViewer3D({
 
     let imgAspect = 1.0;
     if (patternTex && patternTex.image) {
-        const img = patternTex.image as HTMLImageElement;
-        imgAspect = img.width / (img.height || 1);
+      const img = patternTex.image as HTMLImageElement;
+      imgAspect = img.width / (img.height || 1);
     }
 
     const Ht_total = hb + hm + ht
-    const sc = 14 / (Ht_total || 1) 
-    
+    const sc = 14 / (Ht_total || 1)
+
     const thetaRad = theta * (Math.PI / 180)
     const sinT = Math.max(0.001, Math.sin(thetaRad))
     const cosT = Math.max(0, Math.cos(thetaRad))
 
     const A = a * sc
-    const B_base = b * sc 
+    const B_base = b * sc
     const B = B_base * cosT // Bulge width scales with cos(theta)
 
     const H_b = hb * sc
     const H_m = hm * sc
     const H_t = ht * sc
 
-    const q = Math.max(1, Math.round(n / 2)) 
+    const q = Math.max(1, Math.round(n / 2))
     const slice_angle = (2 * Math.PI) / q
-    const delta = Math.PI / q 
+    const delta = Math.PI / q
 
     const sinDelta = Math.max(0.0001, Math.sin(delta))
-    const R_end = A / (2 * sinDelta) 
-    const R_mid = Math.sqrt(A*A + B*B + 2*A*B*Math.cos(delta)) / (2 * sinDelta)
+    const R_end = A / (2 * sinDelta)
+    const R_mid = Math.sqrt(A * A + B * B + 2 * A * B * Math.cos(delta)) / (2 * sinDelta)
 
     const delta_blue = 2 * Math.asin(Math.min(1, A / (2 * R_mid)))
     const delta_red = 2 * Math.asin(Math.min(1, B / (2 * R_mid)))
@@ -324,7 +324,7 @@ export default function LanternViewer3D({
     // Heights scale directly with sin(theta) to simulate squashing
     const Y_t = H_t * sinT
     const Y_b = H_b * sinT
-    const Y_m = H_m
+    const Y_m = H_m * sinT
 
     const H_total = Y_b + Y_m + Y_t
     const y_bot = -H_total / 2
@@ -349,12 +349,12 @@ export default function LanternViewer3D({
       const b_top_R = new THREE.Vector3(R_end * Math.cos(ang_R_end), y_top, R_end * Math.sin(ang_R_end))
 
       // แผงน้ำเงิน
-      addQuad(lanternGroup, [b_bot_L, b_bot_R, b_m1_R, b_m1_L], materials.paperPaleBlue) 
+      addQuad(lanternGroup, [b_bot_L, b_bot_R, b_m1_R, b_m1_L], materials.paperPaleBlue)
       addDecalQuad(lanternGroup, b_bot_L, b_bot_R, b_m1_R, b_m1_L, materials.decalMat, b_bot_L.distanceTo(b_bot_R), b_bot_L.distanceTo(b_m1_L), imgAspect)
 
-      addQuad(lanternGroup, [b_m1_L, b_m1_R, b_m2_R, b_m2_L], materials.paperPaleBlue) 
+      addQuad(lanternGroup, [b_m1_L, b_m1_R, b_m2_R, b_m2_L], materials.paperPaleBlue)
 
-      addQuad(lanternGroup, [b_m2_L, b_m2_R, b_top_R, b_top_L], materials.paperPaleBlue) 
+      addQuad(lanternGroup, [b_m2_L, b_m2_R, b_top_R, b_top_L], materials.paperPaleBlue)
       addDecalQuad(lanternGroup, b_m2_L, b_m2_R, b_top_R, b_top_L, materials.decalMat, b_m2_L.distanceTo(b_m2_R), b_m2_L.distanceTo(b_top_L), imgAspect)
 
       const ang_base_next = (j + 1) * slice_angle
@@ -363,18 +363,18 @@ export default function LanternViewer3D({
       const b_next_m2_L = new THREE.Vector3(R_mid * Math.cos(ang_L_mid_next), y_mid2, R_mid * Math.sin(ang_L_mid_next))
 
       // แผงแดง
-      addTri(lanternGroup, b_bot_R, b_next_m1_L, b_m1_R, materials.paperPaleRed) 
-      addQuad(lanternGroup, [b_m1_R, b_next_m1_L, b_next_m2_L, b_m2_R], materials.paperPaleRed) 
+      addTri(lanternGroup, b_bot_R, b_next_m1_L, b_m1_R, materials.paperPaleRed)
+      addQuad(lanternGroup, [b_m1_R, b_next_m1_L, b_next_m2_L, b_m2_R], materials.paperPaleRed)
       addDecalQuad(lanternGroup, b_m1_R, b_next_m1_L, b_next_m2_L, b_m2_R, materials.decalMat, b_m1_R.distanceTo(b_next_m1_L), b_m1_R.distanceTo(b_m2_R), imgAspect)
-      addTri(lanternGroup, b_m2_R, b_next_m2_L, b_top_R, materials.paperPaleRed) 
+      addTri(lanternGroup, b_m2_R, b_next_m2_L, b_top_R, materials.paperPaleRed)
 
       // ยอดและส่วนอื่นๆ
-      const H_spike = hspike * sc
+      const H_spike = hspike * sc * sinT
       const spikeTip = new THREE.Vector3(R_end * 0.6 * Math.cos(ang_base), y_top + H_spike, R_end * 0.6 * Math.sin(ang_base))
       addTri(lanternGroup, b_top_L, spikeTip, b_top_R, materials.paperPaleBlue)
       addLine(lanternGroup, [b_top_L, spikeTip, b_top_R], materials.edge)
 
-      const L_tail = ltail * sc
+      const L_tail = ltail * sc * sinT
       const t_botL_vert = new THREE.Vector3(b_bot_L.x, y_bot - L_tail, b_bot_L.z)
       const t_botR_vert = new THREE.Vector3(b_bot_R.x, y_bot - L_tail, b_bot_R.z)
       const decorativeTip = new THREE.Vector3(b_bot_L.clone().lerp(b_bot_R, 0.5).x, y_bot - L_tail - L_tail * 0.15, b_bot_L.clone().lerp(b_bot_R, 0.5).z)
@@ -401,10 +401,10 @@ export default function LanternViewer3D({
     lanternGroup.add(candle)
 
     candleLight.position.set(0, candleY, 0)
-    candleLight.userData.baseIntensity = 8.0 
+    candleLight.userData.baseIntensity = 8.0
     candleLight.distance = 25
 
-  }, [theta, n, a, b, hb, hm, ht, hspike, ltail, texLoaded]) 
+  }, [theta, n, a, b, hb, hm, ht, hspike, ltail, texLoaded])
 
   return (
     <div style={{ position: 'relative', marginTop: 16 }}>

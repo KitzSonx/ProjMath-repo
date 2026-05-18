@@ -600,8 +600,9 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
         </div>
 
         <div>
-          <h3 style={{ fontSize:'1rem', marginBottom:8 }}>🏮 พรีวิว 3D (มุมกาง 90 องศา)</h3>
+          <h3 style={{ fontSize:'1rem', marginBottom:8 }}>🏮 พรีวิว 3D (มุมกาง 45 องศา)</h3>
           <LanternViewer3D
+            theta={45}
             a={inputs.a} b={inputs.b}
             hb={inputs.hb} hm={inputs.hm} ht={inputs.ht}
             hspike={inputs.hspike} 

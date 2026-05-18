@@ -26,7 +26,7 @@ interface Props {
   sinT: number
   vTheta: number
   vrr: number
-  patternInputs: PatternInputs 
+  patternInputs: PatternInputs
 }
 
 const TABLE_ROWS = [
@@ -34,9 +34,9 @@ const TABLE_ROWS = [
   { theta: 75, sin: '0.966', v: '3,952.78', vrr: '9.9%' },
   { theta: 60, sin: '0.866', v: '2,848.81', vrr: '35.0%' },
   { theta: 45, sin: '0.707', v: '1,550.69', vrr: '64.6%' },
-  { theta: 30, sin: '0.500', v: '548.25',   vrr: '87.5%' },
-  { theta: 15, sin: '0.259', v: '76.17',    vrr: '98.3%' },
-  { theta: 0,  sin: '0.000', v: '0.00',     vrr: '100.0%' },
+  { theta: 30, sin: '0.500', v: '548.25', vrr: '87.5%' },
+  { theta: 15, sin: '0.259', v: '76.17', vrr: '98.3%' },
+  { theta: 0, sin: '0.000', v: '0.00', vrr: '100.0%' },
 ]
 
 export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, vTheta, vrr, patternInputs }: Props) {
@@ -63,10 +63,10 @@ export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, vThet
       </div>
 
       {/* 👈 จ่ายค่า Props ทั้งหมดที่ได้จากแผงควบคุมเข้าไปให้ LanternViewer3D */}
-      <LanternViewer3D 
+      <LanternViewer3D
         theta={theta}
-        n={patternInputs.n} 
-        a={patternInputs.a} 
+        n={patternInputs.n}
+        a={patternInputs.a}
         b={patternInputs.b}
         hb={patternInputs.hb}
         hm={patternInputs.hm}
