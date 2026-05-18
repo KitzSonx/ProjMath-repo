@@ -35,6 +35,8 @@ const TABLE_ROWS = [
   { theta: 60, sin: '0.866', v: '2,848.81', vrr: '35.0%' },
   { theta: 45, sin: '0.707', v: '1,550.69', vrr: '64.6%' },
   { theta: 30, sin: '0.500', v: '548.25',   vrr: '87.5%' },
+  { theta: 15, sin: '0.259', v: '76.17',    vrr: '98.3%' },
+  { theta: 0,  sin: '0.000', v: '0.00',     vrr: '100.0%' },
 ]
 
 export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, vTheta, vrr, patternInputs }: Props) {
@@ -52,7 +54,8 @@ export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, vThet
         <input
           type="range"
           min={0}
-          max={180}
+          max={90}
+          step={1}
           value={theta}
           onChange={(e) => onThetaChange(parseInt(e.target.value))}
           className={styles.slider}
@@ -61,9 +64,10 @@ export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, vThet
 
       {/* 👈 จ่ายค่า Props ทั้งหมดที่ได้จากแผงควบคุมเข้าไปให้ LanternViewer3D */}
       <LanternViewer3D 
+        theta={theta}
         n={patternInputs.n} 
-        a={Math.max(0.01, patternInputs.a * sinT)} 
-        b={Math.max(0.01, patternInputs.b * sinT)}
+        a={patternInputs.a} 
+        b={patternInputs.b}
         hb={patternInputs.hb}
         hm={patternInputs.hm}
         ht={patternInputs.ht}

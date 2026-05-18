@@ -115,7 +115,7 @@ function addDecalQuad(
 
 
 export default function LanternViewer3D({
-  n = 8, a = 6.5, b = 7, hb = 6.5, hm = 8.5, ht = 6.5, hspike = 3.25, ltail = 30
+  theta = 90, n = 8, a = 6.5, b = 7, hb = 6.5, hm = 8.5, ht = 6.5, hspike = 3.25, ltail = 30
 }: Props) {
   const mountRef = useRef<HTMLDivElement>(null)
   const [texLoaded, setTexLoaded] = useState(false)
@@ -297,8 +297,15 @@ export default function LanternViewer3D({
 
     const Ht_total = hb + hm + ht
     const sc = 14 / (Ht_total || 1) 
+    
+    const thetaRad = theta * (Math.PI / 180)
+    const sinT = Math.max(0.001, Math.sin(thetaRad))
+    const cosT = Math.max(0, Math.cos(thetaRad))
+
     const A = a * sc
-    const B = b * sc 
+    const B_base = b * sc 
+    const B = B_base * cosT // Bulge width scales with cos(theta)
+
     const H_b = hb * sc
     const H_m = hm * sc
     const H_t = ht * sc
@@ -314,10 +321,10 @@ export default function LanternViewer3D({
     const delta_blue = 2 * Math.asin(Math.min(1, A / (2 * R_mid)))
     const delta_red = 2 * Math.asin(Math.min(1, B / (2 * R_mid)))
 
-    const dh_sq = R_mid*R_mid + R_end*R_end - 2 * R_mid * R_end * Math.cos(delta_red / 2)
-    const Y_t = Math.sqrt(Math.max(0.001, H_t * H_t - dh_sq))
-    const Y_b = Math.sqrt(Math.max(0.001, H_b * H_b - dh_sq))
-    const Y_m = H_m 
+    // Heights scale directly with sin(theta) to simulate squashing
+    const Y_t = H_t * sinT
+    const Y_b = H_b * sinT
+    const Y_m = H_m * sinT
 
     const H_total = Y_b + Y_m + Y_t
     const y_bot = -H_total / 2
@@ -362,12 +369,12 @@ export default function LanternViewer3D({
       addTri(lanternGroup, b_m2_R, b_next_m2_L, b_top_R, materials.paperPaleRed) 
 
       // ยอดและส่วนอื่นๆ
-      const H_spike = hspike * sc 
+      const H_spike = hspike * sc * sinT
       const spikeTip = new THREE.Vector3(R_end * 0.6 * Math.cos(ang_base), y_top + H_spike, R_end * 0.6 * Math.sin(ang_base))
       addTri(lanternGroup, b_top_L, spikeTip, b_top_R, materials.paperPaleBlue)
       addLine(lanternGroup, [b_top_L, spikeTip, b_top_R], materials.edge)
 
-      const L_tail = ltail * sc 
+      const L_tail = ltail * sc * sinT
       const t_botL_vert = new THREE.Vector3(b_bot_L.x, y_bot - L_tail, b_bot_L.z)
       const t_botR_vert = new THREE.Vector3(b_bot_R.x, y_bot - L_tail, b_bot_R.z)
       const decorativeTip = new THREE.Vector3(b_bot_L.clone().lerp(b_bot_R, 0.5).x, y_bot - L_tail - L_tail * 0.15, b_bot_L.clone().lerp(b_bot_R, 0.5).z)
@@ -397,7 +404,7 @@ export default function LanternViewer3D({
     candleLight.userData.baseIntensity = 8.0 
     candleLight.distance = 25
 
-  }, [n, a, b, hb, hm, ht, hspike, ltail, texLoaded]) 
+  }, [theta, n, a, b, hb, hm, ht, hspike, ltail, texLoaded]) 
 
   return (
     <div style={{ position: 'relative', marginTop: 16 }}>
