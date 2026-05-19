@@ -324,7 +324,7 @@ export default function LanternViewer3D({
     // Heights scale directly with sin(theta) to simulate squashing
     const Y_t = H_t * sinT
     const Y_b = H_b * sinT
-    const Y_m = H_m * sinT
+    const Y_m = H_m
 
     const H_total = Y_b + Y_m + Y_t
     const y_bot = -H_total / 2
@@ -369,12 +369,12 @@ export default function LanternViewer3D({
       addTri(lanternGroup, b_m2_R, b_next_m2_L, b_top_R, materials.paperPaleRed)
 
       // ยอดและส่วนอื่นๆ
-      const H_spike = hspike * sc * sinT
+      const H_spike = hspike * sc
       const spikeTip = new THREE.Vector3(R_end * 0.6 * Math.cos(ang_base), y_top + H_spike, R_end * 0.6 * Math.sin(ang_base))
       addTri(lanternGroup, b_top_L, spikeTip, b_top_R, materials.paperPaleBlue)
       addLine(lanternGroup, [b_top_L, spikeTip, b_top_R], materials.edge)
 
-      const L_tail = ltail * sc * sinT
+      const L_tail = ltail * sc
       const t_botL_vert = new THREE.Vector3(b_bot_L.x, y_bot - L_tail, b_bot_L.z)
       const t_botR_vert = new THREE.Vector3(b_bot_R.x, y_bot - L_tail, b_bot_R.z)
       const decorativeTip = new THREE.Vector3(b_bot_L.clone().lerp(b_bot_R, 0.5).x, y_bot - L_tail - L_tail * 0.15, b_bot_L.clone().lerp(b_bot_R, 0.5).z)
