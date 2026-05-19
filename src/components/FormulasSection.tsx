@@ -65,15 +65,29 @@ export default function FormulasSection() {
     setSelectedFormula(null);
   };
 
-  // Prevent scrolling when modal is open
+  // Prevent scrolling when modal is open (robust mobile scroll lock)
   useEffect(() => {
     if (selectedFormula) {
+      const scrollY = window.scrollY;
       document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
     } else {
+      const scrollY = document.body.style.top;
       document.body.style.overflow = 'unset';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
     }
     return () => {
       document.body.style.overflow = 'unset';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
     };
   }, [selectedFormula]);
 
@@ -110,9 +124,27 @@ export default function FormulasSection() {
               e.currentTarget.style.borderColor = '#e2e8f0';
             }}
           >
-            <h3 style={{ fontSize: '1.05rem', margin: '0 0 16px 0', color: '#334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ 
+              fontSize: '1.05rem', 
+              margin: '0 0 16px 0', 
+              color: '#334155', 
+              display: 'flex', 
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              gap: '8px'
+            }}>
               <span>{item.title}</span>
-              <span style={{ fontSize: '0.8rem', color: '#0ea5e9', fontWeight: 'normal', background: '#e0f2fe', padding: '4px 8px', borderRadius: '12px' }}>
+              <span style={{ 
+                fontSize: '0.8rem', 
+                color: '#0ea5e9', 
+                fontWeight: 'normal', 
+                background: '#e0f2fe', 
+                padding: '4px 8px', 
+                borderRadius: '12px',
+                whiteSpace: 'nowrap'
+              }}>
                 คลิกดูสูตรย่อย
               </span>
             </h3>
@@ -134,20 +166,22 @@ export default function FormulasSection() {
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 9999,
-          padding: '20px',
-          backdropFilter: 'blur(4px)'
+          padding: '16px',
+          backdropFilter: 'blur(4px)',
+          overscrollBehavior: 'contain'
         }} onClick={closeModal}>
           <div style={{
             background: 'white',
             borderRadius: '16px',
-            padding: '30px',
+            padding: '20px',
             maxWidth: '600px',
             width: '100%',
-            maxHeight: '90vh',
+            maxHeight: '85vh',
             overflowY: 'auto',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
             position: 'relative',
-            animation: 'modalFadeIn 0.3s ease-out forwards'
+            animation: 'modalFadeIn 0.3s ease-out forwards',
+            overscrollBehavior: 'contain'
           }} onClick={(e) => e.stopPropagation()}>
             <style dangerouslySetInnerHTML={{__html: `
               @keyframes modalFadeIn {
@@ -184,7 +218,15 @@ export default function FormulasSection() {
               {selectedFormula.title}
             </h3>
             
-            <div style={{ marginBottom: '24px', padding: '16px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
+            <div style={{ 
+              marginBottom: '24px', 
+              padding: '16px', 
+              background: '#f8fafc', 
+              borderRadius: '8px', 
+              border: '1px dashed #cbd5e1',
+              overflowX: 'auto',
+              maxWidth: '100%'
+            }}>
               <BlockMath math={selectedFormula.latex} />
             </div>
 
@@ -200,7 +242,12 @@ export default function FormulasSection() {
                   borderLeft: '4px solid #10b981',
                   boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
                 }}>
-                  <div style={{ overflowX: 'auto', marginBottom: sub.description ? '12px' : '0' }}>
+                  <div style={{ 
+                    overflowX: 'auto', 
+                    maxWidth: '100%', 
+                    marginBottom: sub.description ? '12px' : '0',
+                    padding: '4px 0'
+                  }}>
                     <BlockMath math={sub.latex} />
                   </div>
                   {sub.description && (

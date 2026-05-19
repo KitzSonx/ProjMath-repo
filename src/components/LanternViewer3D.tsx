@@ -230,6 +230,9 @@ export default function LanternViewer3D({
         return
       }
       if (!isDragging) return
+      if ('touches' in e) {
+        e.preventDefault() // 👈 ป้องกันไม่ให้เบราว์เซอร์เลื่อนหน้าจอขณะลากหมุนโมเดล 3D
+      }
       const pt = 'touches' in e ? e.touches[0] : (e as MouseEvent)
       rotY += (pt.clientX - prevX) * 0.008
       rotX += (pt.clientY - prevY) * 0.005
