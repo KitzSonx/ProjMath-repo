@@ -3,7 +3,7 @@ import type { VolumeResult, FoldState } from '@/types/lantern'
 
 export function useLanternState() {
   const [vOpen, setVOpen] = useState<number>(4386.02)
-  const [theta, setTheta] = useState<number>(90)
+  const [theta, setTheta] = useState<number>(45)
   const [volumeResult, setVolumeResult] = useState<VolumeResult | null>(null)
 
   const foldState: FoldState = { theta, vOpen }
