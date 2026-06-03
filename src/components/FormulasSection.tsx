@@ -55,6 +55,20 @@ const formulas: FormulaData[] = [
         description: 'พื้นที่แถบกาว'
       }
     ]
+  },
+  {
+    title: 'สูตรการพับ-กาง และการลดปริมาตร',
+    latex: 'v(\\theta) = v_{\\text{open}} [\\sin \\theta]^3',
+    subFormulas: [
+      {
+        latex: '\\text{VRR}(\\theta) = 1 - \\frac{v(\\theta)}{v_{\\text{open}}} = 1 - \\sin^3 \\theta',
+        description: 'อัตราการลดปริมาตร (Volume Reduction Rate)'
+      },
+      {
+        latex: 'v(90^\\circ) = v_{\\text{open}} \\quad \\Rightarrow \\quad \\text{VRR}(90^\\circ) = 0\\%',
+        description: 'ปริมาตรขณะกางเต็มที่ (มุมกาง θ = 90°)'
+      }
+    ]
   }
 ]
 

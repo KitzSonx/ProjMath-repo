@@ -29,18 +29,24 @@ interface Props {
   patternInputs: PatternInputs
 }
 
-const TABLE_ROWS = [
-  { theta: 90, sin: '1.000', v: '4,386.02', vrr: '0%' },
-  { theta: 75, sin: '0.966', v: '3,952.78', vrr: '9.9%' },
-  { theta: 60, sin: '0.866', v: '2,848.81', vrr: '35.0%' },
-  { theta: 45, sin: '0.707', v: '1,550.69', vrr: '64.6%' },
-  { theta: 30, sin: '0.500', v: '548.25', vrr: '87.5%' },
-  { theta: 15, sin: '0.259', v: '76.17', vrr: '98.3%' },
-  { theta: 0, sin: '0.000', v: '0.00', vrr: '100.0%' },
-]
+// TABLE_ROWS จะถูกคำนวณแบบ Dynamic ด้านในคอมโพเนนต์ตามค่า vOpen เพื่อความถูกต้องเมื่อปริมาตรเปลี่ยนไป
 
 export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, vTheta, vrr, patternInputs }: Props) {
   const gaugeDeg = vrr * 3.6
+
+  const angles = [90, 75, 60, 45, 30, 15, 0]
+  const dynamicRows = angles.map((ang) => {
+    const rad = ang * (Math.PI / 180)
+    const sinVal = Math.sin(rad)
+    const vVal = vOpen * Math.pow(sinVal, 3)
+    const vrrVal = (1 - Math.pow(sinVal, 3)) * 100
+    return {
+      theta: ang,
+      sin: sinVal.toFixed(3),
+      v: vVal.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      vrr: `${vrrVal.toFixed(1)}%`
+    }
+  })
 
   return (
     <section id="calc-fold">
@@ -104,7 +110,7 @@ export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, vThet
           </tr>
         </thead>
         <tbody>
-          {TABLE_ROWS.map((row) => (
+          {dynamicRows.map((row) => (
             <tr key={row.theta}>
               <td>{row.theta}</td>
               <td>{row.sin}</td>
