@@ -20,7 +20,7 @@ export default function AreaCalculator({ patternInputs }: Props) {
     const akite = q * (b * hm + 0.5 * b * ht + 0.5 * b * hb)
     const atop  = q * (0.5 * a * 8)          // triangle height ~8
     const atail = q * (a * 32 + 0.5 * a * 4) // L=32, tau=4
-    const aglue = 1 * H
+    const aglue = 1 * hm
     const anet  = arect + akite + atop + atail + aglue
 
     setResult({ arect, akite, atop, atail, aglue, anet, q })

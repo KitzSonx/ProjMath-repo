@@ -23,7 +23,8 @@ interface Props {
   vOpen: number
   theta: number
   onThetaChange: (theta: number) => void
-  sinT: number
+  sinT?: number
+  cotT?: number
   vTheta: number
   vrr: number
   patternInputs: PatternInputs
@@ -31,22 +32,41 @@ interface Props {
 
 // TABLE_ROWS จะถูกคำนวณแบบ Dynamic ด้านในคอมโพเนนต์ตามค่า vOpen เพื่อความถูกต้องเมื่อปริมาตรเปลี่ยนไป
 
-export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, vTheta, vrr, patternInputs }: Props) {
-  const gaugeDeg = vrr * 3.6
+export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, cotT, vTheta, vrr, patternInputs }: Props) {
+  const currentCot = cotT ?? (theta === 0 ? 0 : 1 / Math.tan(theta * (Math.PI / 180)))
+  const displayVOpen = 2957.75
+  const gaugeDeg = theta === 0 ? 0 : Math.max(0, Math.min(100, vrr)) * 3.6
 
-  const angles = [90, 75, 60, 45, 30, 15, 0]
+  const vMid = 1734.01
+  const vTopBot = 1223.74
+
+  // 🌟 เอามุมที่ไม่จำเป็น (75 และ 15) ออกไปตามที่แจ้ง เหลือเพียง 90, 60, 45, 30, 0
+  const angles = [90, 60, 45, 30, 0]
   const dynamicRows = angles.map((ang) => {
+    if (ang === 0) {
+      return {
+        theta: 0,
+        cot: 'หาค่าไม่ได้',
+        v: 'หาค่าไม่ได้',
+        vrr: 'หาค่าไม่ได้'
+      }
+    }
     const rad = ang * (Math.PI / 180)
-    const sinVal = Math.sin(rad)
-    const vVal = vOpen * Math.pow(sinVal, 3)
-    const vrrVal = (1 - Math.pow(sinVal, 3)) * 100
+    const cotVal = 1 / Math.tan(rad)
+    const vVal = vMid + vTopBot * cotVal
+    const rawVrr = (1 - vVal / displayVOpen) * 100
+    const vrrVal = Math.abs(rawVrr) < 0.0001 ? 0 : rawVrr
+
     return {
       theta: ang,
-      sin: sinVal.toFixed(3),
-      v: vVal.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      cot: cotVal.toFixed(3),
+      v: vVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       vrr: `${vrrVal.toFixed(1)}%`
     }
   })
+
+  const formattedVRR = Math.abs(vrr) < 0.0001 ? '0.0%' : `${vrr.toFixed(1)}%`
+  const formattedGaugePct = Math.abs(vrr) < 0.0001 ? '0%' : `${vrr.toFixed(0)}%`
 
   return (
     <section id="calc-fold">
@@ -87,16 +107,16 @@ export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, vThet
           style={{ background: `conic-gradient(var(--maroon) ${gaugeDeg}deg, var(--cream-dark) ${gaugeDeg}deg)` }}
         >
           <div className={styles.gaugeInner}>
-            <span className={styles.gaugePct}>{vrr.toFixed(0)}%</span>
+            <span className={styles.gaugePct}>{theta === 0 ? 'N/A' : formattedGaugePct}</span>
             <span className={styles.gaugeLbl}>ลดปริมาตร</span>
           </div>
         </div>
 
         <div className={styles.gaugeInfo}>
-          <p>🏮 V_open = <strong>{vOpen.toLocaleString('en', { maximumFractionDigits: 2 })}</strong> ลบ.ซม.³</p>
-          <p>📐 V(θ)  = <strong>{vTheta.toLocaleString('en', { maximumFractionDigits: 2 })}</strong> ลบ.ซม.³</p>
-          <p>📉 VRR  = <strong>{vrr.toFixed(1)}%</strong></p>
-          <p>📏 sin θ = <strong>{sinT.toFixed(3)}</strong></p>
+          <p>🏮 V_open = <strong>{displayVOpen.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> ลบ.ซม.³</p>
+          <p>📐 V(θ)  = <strong>{theta === 0 ? 'หาค่าไม่ได้' : vTheta.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> ลบ.ซม.³</p>
+          <p>📉 VRR  = <strong>{theta === 0 ? 'หาค่าไม่ได้' : formattedVRR}</strong></p>
+          <p>📏 cot θ = <strong>{theta === 0 ? 'หาค่าไม่ได้' : currentCot.toFixed(3)}</strong></p>
         </div>
       </div>
 
@@ -104,7 +124,7 @@ export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, vThet
         <thead>
           <tr>
             <th>θ (องศา)</th>
-            <th>sin θ</th>
+            <th>cot θ</th>
             <th>V(θ) ลบ.ซม.³</th>
             <th>VRR</th>
           </tr>
@@ -113,7 +133,7 @@ export default function FoldSimulator({ vOpen, theta, onThetaChange, sinT, vThet
           {dynamicRows.map((row) => (
             <tr key={row.theta}>
               <td>{row.theta}</td>
-              <td>{row.sin}</td>
+              <td>{row.cot}</td>
               <td>{row.v}</td>
               <td>{row.vrr}</td>
             </tr>

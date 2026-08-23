@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import LanternViewer3D from './LanternViewer3D'
 import jsPDF from 'jspdf'
 import type { PatternInputs } from '@/types/lantern'
@@ -62,9 +62,12 @@ function drawAspectFitImage(
   if (!params) return;
 
   ctx.save();
-  ctx.globalCompositeOperation = 'multiply'; 
-  ctx.globalAlpha = globalAlpha;
+  // ใช้ source-over แทน multiply เพื่อให้แถบกาวและเส้นที่วาดทีหลังไม่หาย
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = globalAlpha * 0.6;  // ลด opacity ให้เป็นลวดลายโปร่งใสแทน multiply
   ctx.drawImage(img, params.x, params.y, params.width, params.height);
+  ctx.globalAlpha = 1.0;
+  ctx.globalCompositeOperation = 'source-over';
   ctx.restore();
 }
 
@@ -123,9 +126,12 @@ function renderPatternShapes(
     const p2x = bx + nx * tw + (adx / alen) * -shrink
     const p2y = by + ny * tw + (ady / alen) * -shrink
 
-    ctx.fillStyle   = 'rgba(234,179,8,0.25)'
+    // 🌟 ใช้ opacity เข้มขึ้นให้มองเห็นชัดทั้งบนหน้าจอและตอน Export PNG/PDF
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.globalAlpha = 1.0
+    ctx.fillStyle   = 'rgba(234,179,8,0.55)'
     ctx.strokeStyle = '#CA8A04'
-    ctx.lineWidth   = 0.7 * lwScale
+    ctx.lineWidth   = Math.max(0.7 * lwScale, 1)
     ctx.beginPath()
     ctx.moveTo(tx(ax), ty(ay))
     ctx.lineTo(tx(p1x), ty(p1y))
@@ -136,7 +142,7 @@ function renderPatternShapes(
     ctx.stroke()
 
     ctx.strokeStyle = '#16A34A'
-    ctx.lineWidth   = 0.7 * lwScale
+    ctx.lineWidth   = Math.max(0.7 * lwScale, 1)
     ctx.setLineDash([3 * lwScale, 2 * lwScale])
     ctx.beginPath()
     ctx.moveTo(tx(ax), ty(ay))
@@ -303,7 +309,7 @@ interface Props {
   onChange: (newInputs: PatternInputs) => void;
 }
 
-export default function PatternCanvas({ inputs, onChange }: Props) {
+function PatternCanvas({ inputs, onChange }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   
   const [paperSize, setPaperSize] = useState<string>('a4')
@@ -362,7 +368,7 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
     const blue_y3 = hb + hm + true_Lt;
 
     const minX = 0
-    const maxX = cellW * q
+    const maxX = cellW * q + 0.5  // +0.5 = tw (แถบกาวขวาสุดยื่นออกมา 0.5 หน่วย)
     const minY = blue_y0 - (l_tail + l_tail_tip) 
     const maxY = blue_y3 + h_spike          
     const totalW = maxX - minX
@@ -378,7 +384,8 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
     const tx = (x: number) => ox + x * sc
     const ty = (y: number) => oy - y * sc  
 
-    renderPatternShapes(ctx, tx, ty, inputs, 1, patternImg)
+    // 🌟 lwScale = 0.5 เพราะ canvas ถูก scale(2,2) แล้ว ทำให้ 1 หน่วย = 2px จริง
+    renderPatternShapes(ctx, tx, ty, inputs, 0.5, patternImg)
 
     // Legend
     ctx.font = `11px 'Noto Sans Thai', sans-serif`
@@ -397,9 +404,40 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
   }
 
   async function handleDownloadPNG() {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    canvas.toBlob(async blob => {
+    const { a, b, hb, hm, ht, hspike, n, ltail } = inputs
+    const q = Math.round(n / 2)
+    const kiteW = b
+    const l_tail_tip = ltail * 0.15
+    const cellW = a + kiteW
+    const true_Lb = Math.sqrt(Math.pow(b/2, 2) + Math.pow(hb, 2));
+    const true_Lt = Math.sqrt(Math.pow(b/2, 2) + Math.pow(ht, 2));
+    const blue_y0 = hb - true_Lb;
+    const blue_y3 = hb + hm + true_Lt;
+    const minX = 0
+    const maxX = cellW * q + 0.5  // +0.5 = tw (แถบกาวขวาสุดยื่นออกมา 0.5 หน่วย)
+    const minY = blue_y0 - (ltail + l_tail_tip)
+    const maxY = blue_y3 + hspike
+    const totalW_units = maxX - minX
+    const totalH_units = maxY - minY
+
+    // 🌟 สร้าง offscreen canvas ใหม่สำหรับ PNG export (ไม่ใช้ display canvas)
+    const pxPerUnit = 30 // 3 px/mm ที่ 10mm/unit
+    const exportW = Math.ceil(totalW_units * pxPerUnit)
+    const exportH = Math.ceil(totalH_units * pxPerUnit)
+    const expCanvas = document.createElement('canvas')
+    expCanvas.width  = exportW
+    expCanvas.height = exportH
+    const expCtx = expCanvas.getContext('2d')
+    if (!expCtx) return
+    expCtx.fillStyle = '#ffffff'
+    expCtx.fillRect(0, 0, exportW, exportH)
+    const sc = pxPerUnit
+    const txFn = (x: number) => (x - minX) * sc
+    const tyFn = (y: number) => (maxY - y) * sc
+    const lwScale = pxPerUnit * 0.05
+    renderPatternShapes(expCtx, txFn, tyFn, inputs, lwScale, patternImg)
+
+    expCanvas.toBlob(async blob => {
       if (!blob) return
       const fileName = `lantern-pattern-n${inputs.n}.png`
       const file = new File([blob], fileName, { type: 'image/png' })
@@ -427,7 +465,7 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
     const blue_y3 = hb + hm + true_Lt;
 
     const minX = 0
-    const maxX = cellW * q
+    const maxX = cellW * q + 0.5  // +0.5 = tw (แถบกาวขวาสุดยื่นออกมา 0.5 หน่วย)
     const minY = blue_y0 - (ltail + l_tail_tip)
     const maxY = blue_y3 + hspike
     
@@ -612,3 +650,5 @@ export default function PatternCanvas({ inputs, onChange }: Props) {
     </section>
   )
 }
+
+export default React.memo(PatternCanvas)

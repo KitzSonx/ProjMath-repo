@@ -22,7 +22,7 @@ const DEFAULT_PATTERN: PatternInputs = {
 }
 
 export default function Home() {
-  const { vOpen, theta, setTheta, updateVOpen, sinT, vTheta, vrr } = useLanternState()
+  const { vOpen, theta, setTheta, updateVOpen, cotT, vTheta, vrr } = useLanternState()
 
   const [patternInputs, setPatternInputs] = useState<PatternInputs>(DEFAULT_PATTERN)
 
@@ -52,7 +52,7 @@ export default function Home() {
           vOpen={vOpen}
           theta={theta}
           onThetaChange={setTheta}
-          sinT={sinT}
+          cotT={cotT}
           vTheta={vTheta}
           vrr={vrr}
           patternInputs={patternInputs} 

@@ -25,19 +25,43 @@ export default function DesmosSection() {
         style={{ width: '100%', height: '400px', borderRadius: '8px', border: '1px solid #ccc' }}
       />
 
-      <h3 style={{ marginTop: '24px' }}>ลิงก์ Desmos เพิ่มเติม</h3>
-      <p>
-        สามารถเปิดกราฟเต็มจอได้ที่{' '}
-        <a
-          href="https://www.desmos.com/calculator/xzopvhc1yp"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: 'var(--maroon)', fontWeight: 600 }}
-        >
-          desmos.com/calculator
-        </a>{' '}
-        แล้ว copy สูตรจากหัวข้อ &quot;สูตรสำคัญ&quot; ไปวาง
-      </p>
+      <h3 style={{ marginTop: '24px' }}>ลิงก์ Desmos และวิดีโอเพิ่มเติม</h3>
+      <ul style={{ listStyle: 'none', padding: 0, margin: '12px 0 0 0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <li style={{ color: 'var(--text-color, #334155)', lineHeight: 1.6 }}>
+          สามารถเปิดกราฟเต็มจอได้ที่{' '}
+          <a
+            href="https://www.desmos.com/calculator/xzopvhc1yp"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'var(--maroon)', fontWeight: 600, textDecoration: 'underline' }}
+          >
+            desmos.com/calculator
+          </a>{' '}
+          แล้ว copy สูตรจากหัวข้อ &quot;สูตรสำคัญ&quot; ไปวาง
+        </li>
+        <li style={{ color: 'var(--text-color, #334155)', lineHeight: 1.6 }}>
+          <strong>วิธีการใช้งานเว็บไซต์:</strong>{' '}
+          <a
+            href="https://drive.google.com/drive/folders/1P4ff3QhcIz24eC3Aqxq5oSsfFaKLM-BZ"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'var(--maroon)', fontWeight: 600, textDecoration: 'underline' }}
+          >
+            drive.google.com (วิธีการใช้งานเว็บไซต์)
+          </a>
+        </li>
+        <li style={{ color: 'var(--text-color, #334155)', lineHeight: 1.6 }}>
+          <strong>วิธีการจัดทรงโคมล้านนาแบบพับได้:</strong>{' '}
+          <a
+            href="https://drive.google.com/drive/folders/1i3IOGHnJ_lW1huQPFeXpA8EYYw4SXcpB"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'var(--maroon)', fontWeight: 600, textDecoration: 'underline' }}
+          >
+            drive.google.com (วิธีจัดทรงโคมล้านนาพับเก็บได้)
+          </a>
+        </li>
+      </ul>
     </section>
   )
 }

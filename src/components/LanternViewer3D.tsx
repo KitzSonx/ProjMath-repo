@@ -231,7 +231,7 @@ export default function LanternViewer3D({
       }
       if (!isDragging) return
       if ('touches' in e) {
-        e.preventDefault() // 👈 ป้องกันไม่ให้เบราว์เซอร์เลื่อนหน้าจอขณะลากหมุนโมเดล 3D
+        e.preventDefault()
       }
       const pt = 'touches' in e ? e.touches[0] : (e as MouseEvent)
       rotY += (pt.clientX - prevX) * 0.008
@@ -281,15 +281,37 @@ export default function LanternViewer3D({
     }
   }, [])
 
-  // 2. UPDATE GEOMETRY
+  // 🌟 Cache สำหรับ Pre-processed 3D Frames (0..90 องศา)
+  const cacheRef = useRef<Map<number, THREE.Group>>(new Map())
+  const candleRef = useRef<THREE.Mesh | null>(null)
+  const paramsKeyRef = useRef<string>('')
+
+  // 2. UPDATE GEOMETRY WITH PRE-PROCESSING & CACHING
   useEffect(() => {
     if (!engineRef.current) return
     const { lanternGroup, materials, candleLight, patternTex } = engineRef.current
 
-    while (lanternGroup.children.length > 0) {
-      const child = lanternGroup.children[0] as any
-      lanternGroup.remove(child)
-      if (child.geometry) child.geometry.dispose()
+    // สร้าง Key สำหรับพารามิเตอร์รูปทรง หากมีการเปลี่ยนค่าที่ไม่ใช่ theta ให้ล้างแคช
+    const currentParamsKey = `${n}_${a}_${b}_${hb}_${hm}_${ht}_${hspike}_${ltail}_${texLoaded}`
+    if (paramsKeyRef.current !== currentParamsKey) {
+      paramsKeyRef.current = currentParamsKey
+      // Dispose old cache
+      cacheRef.current.forEach((grp) => {
+        grp.traverse((child: any) => {
+          if (child.geometry) child.geometry.dispose()
+        })
+      })
+      cacheRef.current.clear()
+
+      while (lanternGroup.children.length > 0) {
+        lanternGroup.remove(lanternGroup.children[0])
+      }
+
+      // สร้างเทียน
+      if (!candleRef.current) {
+        candleRef.current = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10), materials.candle)
+      }
+      lanternGroup.add(candleRef.current)
     }
 
     let imgAspect = 1.0;
@@ -298,114 +320,149 @@ export default function LanternViewer3D({
       imgAspect = img.width / (img.height || 1);
     }
 
-    const Ht_total = hb + hm + ht
-    const sc = 14 / (Ht_total || 1)
+    // Helper สร้าง 3D Model 1 มุมองศา (Pre-processing Unit)
+    const buildLanternFrame = (deg: number): THREE.Group => {
+      const grp = new THREE.Group()
 
-    const thetaRad = theta * (Math.PI / 180)
-    const sinT = Math.max(0.001, Math.sin(thetaRad))
-    const cosT = Math.max(0, Math.cos(thetaRad))
+      const Ht_total = hb + hm + ht
+      const sc = 14 / (Ht_total || 1)
 
-    const A = a * sc
-    const B_base = b * sc
-    const B = B_base * cosT // Bulge width scales with cos(theta)
+      const thetaRad = deg * (Math.PI / 180)
+      const sinT = Math.max(0.001, Math.sin(thetaRad))
+      const cosT = Math.max(0, Math.cos(thetaRad))
 
-    const H_b = hb * sc
-    const H_m = hm * sc
-    const H_t = ht * sc
+      const A = a * sc
+      const B_base = b * sc
+      const B = B_base * cosT
 
-    const q = Math.max(1, Math.round(n / 2))
-    const slice_angle = (2 * Math.PI) / q
-    const delta = Math.PI / q
+      const H_b = hb * sc
+      const H_m = hm * sc
+      const H_t = ht * sc
 
-    const sinDelta = Math.max(0.0001, Math.sin(delta))
-    const R_end = A / (2 * sinDelta)
-    const R_mid = Math.sqrt(A * A + B * B + 2 * A * B * Math.cos(delta)) / (2 * sinDelta)
+      const q = Math.max(1, Math.round(n / 2))
+      const slice_angle = (2 * Math.PI) / q
+      const delta = Math.PI / q
 
-    const delta_blue = 2 * Math.asin(Math.min(1, A / (2 * R_mid)))
-    const delta_red = 2 * Math.asin(Math.min(1, B / (2 * R_mid)))
+      const sinDelta = Math.max(0.0001, Math.sin(delta))
+      const R_end = A / (2 * sinDelta)
+      const R_mid = Math.sqrt(A * A + B * B + 2 * A * B * Math.cos(delta)) / (2 * sinDelta)
 
-    // Heights scale directly with sin(theta) to simulate squashing
-    const Y_t = H_t * sinT
-    const Y_b = H_b * sinT
-    const Y_m = H_m
+      const delta_blue = 2 * Math.asin(Math.min(1, A / (2 * R_mid)))
 
-    const H_total = Y_b + Y_m + Y_t
-    const y_bot = -H_total / 2
-    const y_mid1 = y_bot + Y_b
-    const y_mid2 = y_mid1 + Y_m
-    const y_top = y_mid2 + Y_t
+      const Y_t = H_t * sinT
+      const Y_b = H_b * sinT
+      const Y_m = H_m
 
-    for (let j = 0; j < q; j++) {
-      const ang_base = j * slice_angle
-      const ang_L_end = ang_base - slice_angle / 2
-      const ang_R_end = ang_base + slice_angle / 2
-      const ang_L_mid = ang_base - delta_blue / 2
-      const ang_R_mid = ang_base + delta_blue / 2
+      const H_total = Y_b + Y_m + Y_t
+      const y_bot = -H_total / 2
+      const y_mid1 = y_bot + Y_b
+      const y_mid2 = y_mid1 + Y_m
+      const y_top = y_mid2 + Y_t
 
-      const b_bot_L = new THREE.Vector3(R_end * Math.cos(ang_L_end), y_bot, R_end * Math.sin(ang_L_end))
-      const b_bot_R = new THREE.Vector3(R_end * Math.cos(ang_R_end), y_bot, R_end * Math.sin(ang_R_end))
-      const b_m1_L = new THREE.Vector3(R_mid * Math.cos(ang_L_mid), y_mid1, R_mid * Math.sin(ang_L_mid))
-      const b_m1_R = new THREE.Vector3(R_mid * Math.cos(ang_R_mid), y_mid1, R_mid * Math.sin(ang_R_mid))
-      const b_m2_L = new THREE.Vector3(R_mid * Math.cos(ang_L_mid), y_mid2, R_mid * Math.sin(ang_L_mid))
-      const b_m2_R = new THREE.Vector3(R_mid * Math.cos(ang_R_mid), y_mid2, R_mid * Math.sin(ang_R_mid))
-      const b_top_L = new THREE.Vector3(R_end * Math.cos(ang_L_end), y_top, R_end * Math.sin(ang_L_end))
-      const b_top_R = new THREE.Vector3(R_end * Math.cos(ang_R_end), y_top, R_end * Math.sin(ang_R_end))
+      for (let j = 0; j < q; j++) {
+        const ang_base = j * slice_angle
+        const ang_L_end = ang_base - slice_angle / 2
+        const ang_R_end = ang_base + slice_angle / 2
+        const ang_L_mid = ang_base - delta_blue / 2
+        const ang_R_mid = ang_base + delta_blue / 2
 
-      // แผงน้ำเงิน
-      addQuad(lanternGroup, [b_bot_L, b_bot_R, b_m1_R, b_m1_L], materials.paperPaleBlue)
-      addDecalQuad(lanternGroup, b_bot_L, b_bot_R, b_m1_R, b_m1_L, materials.decalMat, b_bot_L.distanceTo(b_bot_R), b_bot_L.distanceTo(b_m1_L), imgAspect)
+        const b_bot_L = new THREE.Vector3(R_end * Math.cos(ang_L_end), y_bot, R_end * Math.sin(ang_L_end))
+        const b_bot_R = new THREE.Vector3(R_end * Math.cos(ang_R_end), y_bot, R_end * Math.sin(ang_R_end))
+        const b_m1_L = new THREE.Vector3(R_mid * Math.cos(ang_L_mid), y_mid1, R_mid * Math.sin(ang_L_mid))
+        const b_m1_R = new THREE.Vector3(R_mid * Math.cos(ang_R_mid), y_mid1, R_mid * Math.sin(ang_R_mid))
+        const b_m2_L = new THREE.Vector3(R_mid * Math.cos(ang_L_mid), y_mid2, R_mid * Math.sin(ang_L_mid))
+        const b_m2_R = new THREE.Vector3(R_mid * Math.cos(ang_R_mid), y_mid2, R_mid * Math.sin(ang_R_mid))
+        const b_top_L = new THREE.Vector3(R_end * Math.cos(ang_L_end), y_top, R_end * Math.sin(ang_L_end))
+        const b_top_R = new THREE.Vector3(R_end * Math.cos(ang_R_end), y_top, R_end * Math.sin(ang_R_end))
 
-      addQuad(lanternGroup, [b_m1_L, b_m1_R, b_m2_R, b_m2_L], materials.paperPaleBlue)
+        // แผงน้ำเงิน
+        addQuad(grp, [b_bot_L, b_bot_R, b_m1_R, b_m1_L], materials.paperPaleBlue)
+        addDecalQuad(grp, b_bot_L, b_bot_R, b_m1_R, b_m1_L, materials.decalMat, b_bot_L.distanceTo(b_bot_R), b_bot_L.distanceTo(b_m1_L), imgAspect)
 
-      addQuad(lanternGroup, [b_m2_L, b_m2_R, b_top_R, b_top_L], materials.paperPaleBlue)
-      addDecalQuad(lanternGroup, b_m2_L, b_m2_R, b_top_R, b_top_L, materials.decalMat, b_m2_L.distanceTo(b_m2_R), b_m2_L.distanceTo(b_top_L), imgAspect)
+        addQuad(grp, [b_m1_L, b_m1_R, b_m2_R, b_m2_L], materials.paperPaleBlue)
 
-      const ang_base_next = (j + 1) * slice_angle
-      const ang_L_mid_next = ang_base_next - delta_blue / 2
-      const b_next_m1_L = new THREE.Vector3(R_mid * Math.cos(ang_L_mid_next), y_mid1, R_mid * Math.sin(ang_L_mid_next))
-      const b_next_m2_L = new THREE.Vector3(R_mid * Math.cos(ang_L_mid_next), y_mid2, R_mid * Math.sin(ang_L_mid_next))
+        addQuad(grp, [b_m2_L, b_m2_R, b_top_R, b_top_L], materials.paperPaleBlue)
+        addDecalQuad(grp, b_m2_L, b_m2_R, b_top_R, b_top_L, materials.decalMat, b_m2_L.distanceTo(b_m2_R), b_m2_L.distanceTo(b_top_L), imgAspect)
 
-      // แผงแดง
-      addTri(lanternGroup, b_bot_R, b_next_m1_L, b_m1_R, materials.paperPaleRed)
-      addQuad(lanternGroup, [b_m1_R, b_next_m1_L, b_next_m2_L, b_m2_R], materials.paperPaleRed)
-      addDecalQuad(lanternGroup, b_m1_R, b_next_m1_L, b_next_m2_L, b_m2_R, materials.decalMat, b_m1_R.distanceTo(b_next_m1_L), b_m1_R.distanceTo(b_m2_R), imgAspect)
-      addTri(lanternGroup, b_m2_R, b_next_m2_L, b_top_R, materials.paperPaleRed)
+        const ang_base_next = (j + 1) * slice_angle
+        const ang_L_mid_next = ang_base_next - delta_blue / 2
+        const b_next_m1_L = new THREE.Vector3(R_mid * Math.cos(ang_L_mid_next), y_mid1, R_mid * Math.sin(ang_L_mid_next))
+        const b_next_m2_L = new THREE.Vector3(R_mid * Math.cos(ang_L_mid_next), y_mid2, R_mid * Math.sin(ang_L_mid_next))
 
-      // ยอดและส่วนอื่นๆ
-      const H_spike = hspike * sc
-      const spikeTip = new THREE.Vector3(R_end * 0.6 * Math.cos(ang_base), y_top + H_spike, R_end * 0.6 * Math.sin(ang_base))
-      addTri(lanternGroup, b_top_L, spikeTip, b_top_R, materials.paperPaleBlue)
-      addLine(lanternGroup, [b_top_L, spikeTip, b_top_R], materials.edge)
+        // แผงแดง
+        addTri(grp, b_bot_R, b_next_m1_L, b_m1_R, materials.paperPaleRed)
+        addQuad(grp, [b_m1_R, b_next_m1_L, b_next_m2_L, b_m2_R], materials.paperPaleRed)
+        addDecalQuad(grp, b_m1_R, b_next_m1_L, b_next_m2_L, b_m2_R, materials.decalMat, b_m1_R.distanceTo(b_next_m1_L), b_m1_R.distanceTo(b_m2_R), imgAspect)
+        addTri(grp, b_m2_R, b_next_m2_L, b_top_R, materials.paperPaleRed)
 
-      const L_tail = ltail * sc
-      const t_botL_vert = new THREE.Vector3(b_bot_L.x, y_bot - L_tail, b_bot_L.z)
-      const t_botR_vert = new THREE.Vector3(b_bot_R.x, y_bot - L_tail, b_bot_R.z)
-      const decorativeTip = new THREE.Vector3(b_bot_L.clone().lerp(b_bot_R, 0.5).x, y_bot - L_tail - L_tail * 0.15, b_bot_L.clone().lerp(b_bot_R, 0.5).z)
+        // ยอดและหาง
+        const H_spike = hspike * sc
+        const spikeTip = new THREE.Vector3(R_end * 0.6 * Math.cos(ang_base), y_top + H_spike, R_end * 0.6 * Math.sin(ang_base))
+        addTri(grp, b_top_L, spikeTip, b_top_R, materials.paperPaleBlue)
+        addLine(grp, [b_top_L, spikeTip, b_top_R], materials.edge)
 
-      addQuad(lanternGroup, [b_bot_L, b_bot_R, t_botR_vert, t_botL_vert], materials.paperPaleBlue)
-      addTri(lanternGroup, t_botL_vert, decorativeTip, t_botR_vert, materials.paperPaleBlue)
-      addLine(lanternGroup, [b_bot_L, t_botL_vert, decorativeTip, t_botR_vert, b_bot_R], materials.edge)
+        const L_tail = ltail * sc
+        const t_botL_vert = new THREE.Vector3(b_bot_L.x, y_bot - L_tail, b_bot_L.z)
+        const t_botR_vert = new THREE.Vector3(b_bot_R.x, y_bot - L_tail, b_bot_R.z)
+        const decorativeTip = new THREE.Vector3(b_bot_L.clone().lerp(b_bot_R, 0.5).x, y_bot - L_tail - L_tail * 0.15, b_bot_L.clone().lerp(b_bot_R, 0.5).z)
 
-      addLine(lanternGroup, [b_bot_L, b_m1_L, b_m2_L, b_top_L], materials.edge)
-      addLine(lanternGroup, [b_bot_R, b_m1_R, b_m2_R, b_top_R], materials.edge)
-      addLine(lanternGroup, [b_bot_L, b_bot_R], materials.edge)
-      addLine(lanternGroup, [b_top_L, b_top_R], materials.edge)
-      addLine(lanternGroup, [b_m1_L, b_m1_R], materials.fold)
-      addLine(lanternGroup, [b_m2_L, b_m2_R], materials.fold)
-      addLine(lanternGroup, [b_bot_R, b_next_m1_L], materials.fold)
-      addLine(lanternGroup, [b_m1_R, b_next_m1_L], materials.fold)
-      addLine(lanternGroup, [b_m2_R, b_next_m2_L], materials.fold)
-      addLine(lanternGroup, [b_top_R, b_next_m2_L], materials.fold)
+        addQuad(grp, [b_bot_L, b_bot_R, t_botR_vert, t_botL_vert], materials.paperPaleBlue)
+        addTri(grp, t_botL_vert, decorativeTip, t_botR_vert, materials.paperPaleBlue)
+        addLine(grp, [b_bot_L, t_botL_vert, decorativeTip, t_botR_vert, b_bot_R], materials.edge)
+
+        addLine(grp, [b_bot_L, b_m1_L, b_m2_L, b_top_L], materials.edge)
+        addLine(grp, [b_bot_R, b_m1_R, b_m2_R, b_top_R], materials.edge)
+        addLine(grp, [b_bot_L, b_bot_R], materials.edge)
+        addLine(grp, [b_top_L, b_top_R], materials.edge)
+        addLine(grp, [b_m1_L, b_m1_R], materials.fold)
+        addLine(grp, [b_m2_L, b_m2_R], materials.fold)
+        addLine(grp, [b_bot_R, b_next_m1_L], materials.fold)
+        addLine(grp, [b_m1_R, b_next_m1_L], materials.fold)
+        addLine(grp, [b_m2_R, b_next_m2_L], materials.fold)
+        addLine(grp, [b_top_R, b_next_m2_L], materials.fold)
+      }
+
+      (grp as any).userData = { candleY: y_bot + Y_b + Y_m / 2 }
+      return grp
     }
 
-    const candleY = y_bot + Y_b + Y_m / 2
-    const candle = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10), materials.candle)
-    candle.position.set(0, candleY, 0)
-    lanternGroup.add(candle)
+    const currentDeg = Math.round(Math.max(0, Math.min(90, theta)))
 
-    candleLight.position.set(0, candleY, 0)
-    candleLight.userData.baseIntensity = 8.0
-    candleLight.distance = 25
+    // ถ้ายังไม่มีในแคช ให้สร้างทันที
+    if (!cacheRef.current.has(currentDeg)) {
+      const newGrp = buildLanternFrame(currentDeg)
+      cacheRef.current.set(currentDeg, newGrp)
+      lanternGroup.add(newGrp)
+    }
+
+    // สลับการแสดงผลแบบ O(1) Instant
+    cacheRef.current.forEach((grp, deg) => {
+      grp.visible = (deg === currentDeg)
+    })
+
+    // อัปเดตตำแหน่งเทียนและแสง
+    const activeGrp = cacheRef.current.get(currentDeg)
+    if (activeGrp && candleRef.current) {
+      const candleY = (activeGrp as any).userData.candleY || 0
+      candleRef.current.position.set(0, candleY, 0)
+      candleLight.position.set(0, candleY, 0)
+      candleLight.userData.baseIntensity = 8.0
+      candleLight.distance = 25
+    }
+
+    // 🌟 Pre-processing ล่วงหน้าใน Background สำหรับมุม 0..90 องศาที่เหลือ
+    const timer = setTimeout(() => {
+      for (let d = 0; d <= 90; d += 1) {
+        if (!cacheRef.current.has(d)) {
+          const preGrp = buildLanternFrame(d)
+          preGrp.visible = (d === currentDeg)
+          cacheRef.current.set(d, preGrp)
+          lanternGroup.add(preGrp)
+        }
+      }
+    }, 50)
+
+    return () => clearTimeout(timer)
 
   }, [theta, n, a, b, hb, hm, ht, hspike, ltail, texLoaded])
 

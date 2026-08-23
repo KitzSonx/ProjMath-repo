@@ -25,7 +25,7 @@ const formulas: FormulaData[] = [
         description: '(สำหรับ V_บน และ V_ล่าง)'
       },
       {
-        latex: 'V_{\\text{กลาง}} = KR^2h',
+        latex: 'V_{\\text{กลาง}} = (A(R))h_m',
         description: ''
       }
     ]
@@ -51,22 +51,22 @@ const formulas: FormulaData[] = [
         description: 'พื้นที่หางล่าง'
       },
       {
-        latex: 'A_{\\text{glue}} = gH_s',
+        latex: 'A_{\\text{glue}} = gh_m',
         description: 'พื้นที่แถบกาว'
       }
     ]
   },
   {
     title: 'สูตรการพับ-กาง และการลดปริมาตร',
-    latex: 'v(\\theta) = v_{\\text{open}} [\\sin \\theta]^3',
+    latex: 'v(\\theta) = V_{\\text{openกลาง}} + (V_{\\text{openบน}} + V_{\\text{openล่าง}}) \\cot \\theta',
     subFormulas: [
       {
-        latex: '\\text{VRR}(\\theta) = 1 - \\frac{v(\\theta)}{v_{\\text{open}}} = 1 - \\sin^3 \\theta',
+        latex: '\\text{VRR}(\\theta) = 1 - \\frac{v(\\theta)}{v_{\\text{open}}}',
         description: 'อัตราการลดปริมาตร (Volume Reduction Rate)'
       },
       {
-        latex: 'v(90^\\circ) = v_{\\text{open}} \\quad \\Rightarrow \\quad \\text{VRR}(90^\\circ) = 0\\%',
-        description: 'ปริมาตรขณะกางเต็มที่ (มุมกาง θ = 90°)'
+        latex: 'v(45^\\circ) = v_{\\text{open}} \\quad \\Rightarrow \\quad \\text{VRR}(45^\\circ) = 0\\%',
+        description: 'ปริมาตรขณะกางเต็มที่ (มุมกาง θ = 45°)'
       }
     ]
   }

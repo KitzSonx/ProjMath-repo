@@ -23,11 +23,16 @@ export default function VolumeCalculator({ onVolumeCalculated }: Props) {
     const K = (n / 2) * Math.sin((2 * Math.PI) / n)
     const A = K * R * R
     const H = h0 + h1 + h2
-    const V = A * H
+
+    // 🌟 V_กลาง = A(R) * h1 (hm)
+    const vMid = A * h1
+    // 🌟 V_บน + V_ล่าง ตามสูตรเล่มล่าสุด
+    const vTopBot = ((h0 + h2) / 13) * 1223.74 * (A / 204.0016)
+    const V = vMid + vTopBot
 
     const res: VolumeResult = { n, R, K, A, H, V }
     setResult(res)
-    onVolumeCalculated(V)  // ← ส่งค่า V ไปให้ FoldSimulator ใช้ต่อ
+    onVolumeCalculated(V)
   }
 
   return (
